@@ -24,7 +24,7 @@ export interface PlaceDetails {
  * Prioritizes pinpoint accurate local 'Seed' data while providing global Photon coverage.
  * No API Keys | No Console | Pinpoint Precision
  */
-export const usePlacesAutocomplete = (_isLoaded: boolean) => {
+export const usePlacesAutocomplete = () => {
   const [predictions, setPredictions] = useState<PlacePrediction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const abortController = useRef<AbortController | null>(null);
@@ -132,11 +132,8 @@ export const usePlacesAutocomplete = (_isLoaded: boolean) => {
       const combined = [...localResults, ...remoteResults.filter(r => !localResults.some(l => l.description === r.description))];
       setPredictions(combined);
       
-    } catch (error: any) {
-      if (error.name !== 'AbortError') {
-        console.error('Hybrid Search Error:', error);
-        setPredictions([]);
-      }
+    } catch {
+      setPredictions([]);
     } finally {
       setIsLoading(false);
     }

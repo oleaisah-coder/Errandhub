@@ -42,7 +42,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       if (response.data) {
         set({ stats: response.data as DashboardStats, isLoading: false });
       }
-    } catch (error) {
+    } catch {
       set({ isLoading: false });
     }
   },
@@ -54,7 +54,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       if (response.data) {
         set({ allOrders: (response.data as { orders: Order[] }).orders || [], isLoading: false });
       }
-    } catch (error) {
+    } catch {
       set({ isLoading: false });
     }
   },
@@ -66,7 +66,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       if (response.data) {
         set({ allUsers: (response.data as { users: User[] }).users || [], isLoading: false });
       }
-    } catch (error) {
+    } catch {
       set({ isLoading: false });
     }
   },
@@ -78,7 +78,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       if (response.data) {
         set({ allRunners: (response.data as { runners: Runner[] }).runners || [], isLoading: false });
       }
-    } catch (error) {
+    } catch {
       set({ isLoading: false });
     }
   },

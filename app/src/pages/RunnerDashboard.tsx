@@ -63,18 +63,6 @@ const RunnerDashboard = () => {
     fetchRunners();
   }, [fetchOrders, fetchRunners]);
 
-  // Self-shielding loading state: Prevents crash if store is still hydrating
-  // Note: Only block if they are truly null/undefined (not just empty arrays)
-  if (orders === undefined || runners === undefined) {
-    return (
-      <div className="h-[100dvh] flex items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center gap-4">
-          <Activity className="w-10 h-10 text-[#277310] animate-spin" />
-          <p className="text-slate-500 font-medium tracking-tight">Syncing Runner Portal...</p>
-        </div>
-      </div>
-    );
-  }
 
   const runner = (runners || []).find(r => r?.userId === user?.id);
   const [isAvailable, setIsAvailable] = useState(runner?.isAvailable ?? true);
@@ -99,6 +87,26 @@ const RunnerDashboard = () => {
       addRunner(newRunner);
     }
   }, [user, runner, addRunner]);
+
+
+
+  // Self-shielding loading state: Prevents crash if store is still hydrating
+  // Note: Only block if they are truly null/undefined (not just empty arrays)
+  if (orders === undefined || runners === undefined) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="h-[100dvh] flex items-center justify-center bg-slate-50"
+      >
+        <div className="flex flex-col items-center gap-4">
+          <Activity className="w-10 h-10 text-[#277310] animate-spin" />
+          <p className="text-slate-500 font-medium tracking-tight">Syncing Runner Portal...</p>
+        </div>
+      </motion.div>
+    );
+  }
 
   // THE FIREWALL: Only allow orders explicitly sent by Admin to the marketplace
   const availableOrders = (orders || []).filter(o => 

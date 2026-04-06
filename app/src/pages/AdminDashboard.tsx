@@ -39,16 +39,20 @@ const AdminDashboard = () => {
   const { logout } = useAuthStore();
   const { orders, updateOrderStatus, clearAllOrders, fetchOrders, fetchAdminStats, adminStats } = useOrderStore();
   const { runners, fetchRunners, isLoading: isRunnersLoading } = useRunnerStore();
-  const { user } = useAuthStore();
+
 
   useEffect(() => {
     console.log("Admin Component Mounted", { hasOrders: !!orders, hasRunners: !!runners });
     const loadData = async () => {
-      await Promise.all([
-        fetchOrders(),
-        fetchRunners(),
-        fetchAdminStats()
-      ]);
+      try {
+        await Promise.all([
+          fetchOrders(),
+          fetchRunners(),
+          fetchAdminStats()
+        ]);
+      } catch (error) {
+        console.error("Dashboard data fetch failed:", error);
+      }
     };
     loadData();
     // Refresh interval for live dashboard feel
@@ -71,12 +75,17 @@ const AdminDashboard = () => {
   // Self-shielding loading state: Prevents crash if store is still hydrating
   if (!orders || !runners) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="min-h-screen flex items-center justify-center bg-slate-50"
+      >
         <div className="flex flex-col items-center gap-4">
           <Activity className="w-10 h-10 text-[#277310] animate-spin" />
           <p className="text-slate-500 font-medium">Initializing Dashboard...</p>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
@@ -530,11 +539,15 @@ const AdminDashboard = () => {
                       </motion.div>
                     ))}
                     {pendingOrders.length === 0 && (
-                      <div className="col-span-full py-12 flex flex-col items-center justify-center bg-white rounded-3xl border border-dashed border-slate-200 shadow-sm">
+                      <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="col-span-full py-12 flex flex-col items-center justify-center bg-white rounded-3xl border border-dashed border-slate-200 shadow-sm"
+                      >
                         <Navigation className="w-12 h-12 text-slate-200 mb-4" />
                         <h3 className="text-lg font-bold text-slate-800">Marketplace is up to date</h3>
                         <p className="text-slate-500">No orders awaiting dispatch at the moment.</p>
-                      </div>
+                      </motion.div>
                     )}
                   </AnimatePresence>
                 </div>

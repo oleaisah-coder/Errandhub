@@ -56,7 +56,7 @@ export const useRunnerStore = create<RunnerState>()(
           if (response.data) {
             set({ availableTasks: (response.data as { tasks: Order[] }).tasks || [], isLoading: false });
           }
-        } catch (error) {
+        } catch {
           set({ isLoading: false });
         }
       },
@@ -68,7 +68,7 @@ export const useRunnerStore = create<RunnerState>()(
           if (response.data) {
             set({ myTasks: (response.data as { tasks: Order[] }).tasks || [], isLoading: false });
           }
-        } catch (error) {
+        } catch {
           set({ isLoading: false });
         }
       },

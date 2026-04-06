@@ -93,7 +93,7 @@ async function fetchApi<T>(
           }
           return { error: 'Session expired. Please log in again.' };
         }
-      } catch (err) {
+      } catch {
         return { error: 'Session verification failed.' };
       }
     }

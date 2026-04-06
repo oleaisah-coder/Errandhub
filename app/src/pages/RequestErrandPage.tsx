@@ -48,7 +48,7 @@ const RequestErrandPage = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { addresses: allAddresses, getDefaultAddress, addAddress } = useAddressStore();
-  const { predictions, getPredictions, getDetails, isLoading: predictionsLoading } = usePlacesAutocomplete(true);
+  const { predictions, getPredictions, getDetails, isLoading: predictionsLoading } = usePlacesAutocomplete();
   const { balance, deductFromBalance } = useWalletStore();
   const [showPredictions, setShowPredictions] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
