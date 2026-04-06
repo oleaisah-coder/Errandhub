@@ -39,8 +39,7 @@ const AdminDashboard = () => {
   const { logout } = useAuthStore();
   const { orders, updateOrderStatus, clearAllOrders, fetchOrders, fetchAdminStats, adminStats } = useOrderStore();
   const { runners, fetchRunners, isLoading: isRunnersLoading } = useRunnerStore();
-
-
+  // Load dashboard data on mount
   useEffect(() => {
     console.log("Admin Component Mounted", { hasOrders: !!orders, hasRunners: !!runners });
     const loadData = async () => {
