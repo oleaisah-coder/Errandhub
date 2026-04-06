@@ -1,0 +1,11 @@
+            </AnimatePresence>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</motion.div>
+);
+};
+
+export default UserDashboard;

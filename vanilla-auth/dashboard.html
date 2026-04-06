@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Authentication System</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="dashboard-container auth-container">
+    <div class="header">
+      <div>
+        <h1 style="text-align: left; margin: 0;">Dashboard</h1>
+        <p class="subtitle" style="text-align: left; margin: 0; margin-top: 4px;">Welcome back, <span id="user-name-display" style="font-weight: 600; color: var(--primary);">User</span>!</p>
+      </div>
+      <button onclick="handleLogout()" class="btn-secondary">Log out</button>
+    </div>
+
+    <div style="padding: 2rem 0; text-align: center;">
+      <h2 style="font-size: 1.25rem; margin-bottom: 1rem;">You are securely authenticated.</h2>
+      <p style="color: var(--text-muted); line-height: 1.6;">
+        This page demonstrates a protected route. If you attempt to access this page without being logged in, 
+        you will be cleanly redirected back to the login screen.
+      </p>
+    </div>
+  </div>
+
+  <script src="auth.js"></script>
+  <script>
+    // Initialize dashboard logic when DOM is loaded
+    document.addEventListener('DOMContentLoaded', () => {
+      // First, protect the route: if NOT logged in, go to login
+      enforceAuth();
+
+      // Display the current user's name
+      const currentUser = getCurrentUser();
+      if (currentUser && currentUser.name) {
+        document.getElementById('user-name-display').textContent = currentUser.name;
+      }
+    });
+  </script>
+</body>
+</html>

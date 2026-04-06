@@ -1,0 +1,10 @@
+{
+  "name": "errandhub-workspace",
+  "version": "1.0.0",
+  "description": "Root workspace proxy script",
+  "scripts": {
+    "start": "cd errandhub-backend && npm start",
+    "dev": "cd app && npm run dev",
+    "build": "cd app && npm run build"
+  }
+}

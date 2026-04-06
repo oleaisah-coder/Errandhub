@@ -1,0 +1,29 @@
+
+> errandhub-backend@1.0.0 dev
+> node --watch server.js
+
+PostgreSQL connection string detected. Attempting to connect to Supabase...
+ErrandHub API server running on port 5501
+Environment: development
+Successfully connected to the PostgreSQL database.
+Restarting 'server.js'
+PostgreSQL connection string detected. Attempting to connect to Supabase...
+ErrandHub API server running on port 5501
+Environment: development
+Successfully connected to the PostgreSQL database.
+Successfully connected to the PostgreSQL database.
+Successfully connected to the PostgreSQL database.
+Successfully connected to the PostgreSQL database.
+Successfully connected to the PostgreSQL database.
+Successfully connected to the PostgreSQL database.
+Successfully connected to the PostgreSQL database.
+Successfully connected to the PostgreSQL database.
+Successfully connected to the PostgreSQL database.
+Successfully connected to the PostgreSQL database.
+Successfully connected to the PostgreSQL database.
+Successfully connected to the PostgreSQL database.
+Successfully connected to the PostgreSQL database.
+Successfully connected to the PostgreSQL database.
+Successfully connected to the PostgreSQL database.
+Successfully connected to the PostgreSQL database.
+Successfully connected to the PostgreSQL database.

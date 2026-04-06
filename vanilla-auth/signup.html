@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Account - Authentication System</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div class="auth-container">
+    <h1>Create an Account</h1>
+    <p class="subtitle">Join us to access the dashboard</p>
+
+    <!-- Success/Error containers -->
+    <div id="signup-error" class="message error"></div>
+    <div id="signup-success" class="message success">Account created successfully! Redirecting...</div>
+
+    <form id="signup-form">
+      <div class="input-group">
+        <label for="name">Full Name</label>
+        <input type="text" id="name" required placeholder="John Doe" minlength="2">
+      </div>
+
+      <div class="input-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" required placeholder="you@example.com">
+      </div>
+
+      <div class="input-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" required placeholder="••••••••" minlength="6">
+      </div>
+
+      <button type="submit">Sign Up</button>
+    </form>
+
+    <p class="link-text">
+      Already have an account? <a href="index.html">Log in</a>
+    </p>
+  </div>
+
+  <script src="auth.js"></script>
+  <script>
+    // Initialize signup page logic when DOM is loaded
+    document.addEventListener('DOMContentLoaded', () => {
+      // First, protect the route: if already logged in, go to dashboard
+      enforceGuest();
+
+      const signupForm = document.getElementById('signup-form');
+      signupForm.addEventListener('submit', handleSignupSubmit);
+    });
+  </script>
+</body>
+
+</html>
