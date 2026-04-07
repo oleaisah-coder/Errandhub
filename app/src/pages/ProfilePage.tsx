@@ -59,7 +59,7 @@ const ProfilePage = () => {
         </div>
       </header>
 
-      <div className="container-max mx-auto section-padding py-8">
+      <div className="container-max mx-auto section-padding py-8 pb-24">
         <div className="max-w-2xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
