@@ -304,8 +304,8 @@ const TrackOrderPage = () => {
                           <p className="font-semibold">{runner.user.firstName} {runner.user.lastName}</p>
                           <div className="flex items-center gap-1">
                             <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                            <span className="text-sm">{runner.rating}</span>
-                            <span className="text-sm text-gray-500">({runner.totalDeliveries} deliveries)</span>
+                            <span className="text-sm">{Number(runner?.rating || 0).toFixed(1)}</span>
+                            <span className="text-sm text-gray-500">({runner?.totalDeliveries || 0} deliveries)</span>
                           </div>
                         </div>
                       </div>

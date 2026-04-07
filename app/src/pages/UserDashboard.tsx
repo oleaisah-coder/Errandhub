@@ -336,12 +336,15 @@ const UserDashboard = () => {
           {/* Main Content */}
           <div className="lg:col-span-3 flex-1 overflow-y-visible">
             <AnimatePresence mode="wait">
-            {activeTab === 'overview' && (
-              <motion.div 
-                key="overview"
+              <motion.div
+                key={activeTab}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+            {activeTab === 'overview' && (
+              <div 
                 className="space-y-8"
               >
                 {/* Welcome */}
@@ -471,15 +474,11 @@ const UserDashboard = () => {
                     </div>
                   </div>
                 )}
-              </motion.div>
+            </div>
             )}
 
             {activeTab === 'notifications' && (
-              <motion.div 
-                key="notifications"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
+              <div 
                 className="space-y-6"
               >
                 <div className="flex items-center justify-between mb-2">
@@ -544,24 +543,20 @@ const UserDashboard = () => {
                     </CardContent>
                   </Card>
                 )}
-              </motion.div>
+              </div>
             )}
 
             {activeTab === 'wallet' && (
-              <motion.div
-                key="wallet"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-              >
+              <div>
                 <div className="mb-6 flex items-center justify-between">
                   <h1 className="text-3xl font-bold text-slate-900 font-['Poppins']">
                     Your Wallet
                   </h1>
                 </div>
                 <WalletDashboard />
-              </motion.div>
+              </div>
             )}
+            </motion.div>
             </AnimatePresence>
           </div>
         </div>

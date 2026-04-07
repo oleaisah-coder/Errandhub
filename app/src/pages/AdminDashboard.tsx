@@ -687,8 +687,8 @@ const AdminDashboard = () => {
                                 </div>
                               </td>
                               <td className="py-4 px-6">
-                                <Badge className={`px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${runner.isAvailable ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20' : 'bg-slate-100 text-slate-700 ring-slate-600/20'}`}>
-                                  {runner.isAvailable ? 'Available' : 'Offline'}
+                                <Badge className={`px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${runner?.isAvailable ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20' : 'bg-slate-100 text-slate-700 ring-slate-600/20'}`}>
+                                  {runner?.isAvailable ? 'Available' : 'Offline'}
                                 </Badge>
                               </td>
                               <td className="py-4 px-6 text-right">
