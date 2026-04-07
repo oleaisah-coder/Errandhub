@@ -92,18 +92,6 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     }
   },
 
-  fetchAllRunners: async () => {
-    set({ isLoading: true });
-    try {
-      const response = await adminApi.getRunners();
-      if (response.data) {
-        set({ allRunners: (response.data as { runners: Runner[] }).runners || [], isLoading: false });
-      }
-    } catch {
-      set({ isLoading: false });
-    }
-  },
-
   assignRunner: async (orderId: string, runnerId: string) => {
     try {
       console.log('Assign runner:', orderId, runnerId);

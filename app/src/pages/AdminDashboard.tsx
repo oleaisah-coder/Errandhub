@@ -33,7 +33,6 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { useAuthStore, useOrderStore, useRunnerStore, useAdminStore } from '@/store';
-import { adminApi } from '@/services/api';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -126,7 +125,14 @@ const AdminDashboard = () => {
   });
 
   // Users for the Users tab - use actual users from admin store
-  const displayUsers = allUsers.length > 0 ? allUsers : mockUsers;
+  const displayUsers = allUsers.length > 0 
+    ? allUsers.map((u: any) => ({
+        id: u.id,
+        name: u.firstName && u.lastName ? `${u.firstName} ${u.lastName}` : u.email || 'Unknown',
+        orders: (orders || []).filter((o: any) => o.userId === u.id).length,
+        spent: (orders || []).filter((o: any) => o.userId === u.id).reduce((sum: number, o: any) => sum + (Number(o.totalAmount) || 0), 0)
+      }))
+    : mockUsers;
 
   const handleLogout = () => {
     logout();
