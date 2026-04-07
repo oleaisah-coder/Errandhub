@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 5001;
 
 // ─── Middleware ───────────────────────────────────────────────
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'https://errandhub-v63n.vercel.app',
+  origin: ['https://errandhub-v63n.vercel.app', 'http://localhost:5173', 'http://localhost:3000'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
