@@ -107,7 +107,16 @@ export const useOrderStore = create<OrderState>()(
         set({ isLoading: true });
         try {
           const user = useAuthStore.getState().user;
-          console.log('[OrderStore] Fetching orders, user role:', user?.role, 'user:', user);
+          console.log('[OrderStore] Fetching orders, user role:', user?.role, 'user email:', user?.email);
+          
+          if (!user) {
+            console.log('[OrderStore] No user in auth store, waiting...');
+            // Wait a moment for auth to initialize
+            await new Promise(r => setTimeout(r, 500));
+            const refreshedUser = useAuthStore.getState().user;
+            console.log('[OrderStore] After wait, user:', refreshedUser?.role);
+          }
+          
           let response;
           
           if (user?.role === 'admin') {
