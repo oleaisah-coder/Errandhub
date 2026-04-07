@@ -107,21 +107,25 @@ export const useOrderStore = create<OrderState>()(
         set({ isLoading: true });
         try {
           const user = useAuthStore.getState().user;
+          console.log('[OrderStore] Fetching orders, user role:', user?.role, 'user:', user);
           let response;
           
           if (user?.role === 'admin') {
             response = await adminApi.getOrders();
+            console.log('[OrderStore] Admin fetch response:', response);
           } else {
             response = await orderApi.getOrders();
           }
           
           if (response.data) {
             const data = response.data as any;
+            console.log('[OrderStore] Orders data:', data);
             set({ 
               orders: (data.orders || data) as unknown as Order[], 
               isLoading: false 
             });
           } else {
+            console.log('[OrderStore] No data, error:', response.error);
             set({ isLoading: false });
           }
         } catch (error) {

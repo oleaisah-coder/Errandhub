@@ -36,19 +36,22 @@ import { useAuthStore, useOrderStore, useRunnerStore } from '@/store';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const { logout } = useAuthStore();
+  const { logout, user: authUser } = useAuthStore();
+  console.log('[AdminDash] Auth user:', authUser);
   const { orders, updateOrderStatus, clearAllOrders, fetchOrders, fetchAdminStats, adminStats } = useOrderStore();
   const { runners, fetchRunners, isLoading: isRunnersLoading } = useRunnerStore();
   // Load dashboard data on mount
   useEffect(() => {
-    console.log("Admin Component Mounted", { hasOrders: !!orders, hasRunners: !!runners });
+    console.log("Admin Component Mounted", { hasOrders: !!orders, hasRunners: !!runners, role: useAuthStore.getState()?.user?.role });
     const loadData = async () => {
       try {
+        console.log("Loading admin data...");
         await Promise.all([
           fetchOrders(),
           fetchRunners(),
           fetchAdminStats()
         ]);
+        console.log("Admin data loaded", { orders: orders?.length });
       } catch (error) {
         console.error("Dashboard data fetch failed:", error);
       }
