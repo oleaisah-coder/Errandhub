@@ -1,17 +1,19 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, User, Mail, Camera, Save } from 'lucide-react';
+import { ArrowLeft, User, Mail, Camera, Save, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuthStore } from '@/store';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
   const { user, updateProfile } = useAuthStore();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
@@ -23,9 +25,87 @@ const ProfilePage = () => {
     state: user?.state || '',
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.avatarUrl || null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (!user?.id) {
+      toast.error('You must be logged in to upload an avatar');
+      return;
+    }
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Please select a valid image file (JPEG, PNG, WebP, or GIF)');
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image must be less than 2MB');
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      // Generate unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
+
+      // Upload to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true,
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      const publicUrl = urlData.publicUrl;
+
+      // Update user profile in database
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Update local state
+      setAvatarUrl(publicUrl);
+      updateProfile({ ...formData, avatarUrl: publicUrl });
+      
+      toast.success('Profile picture updated successfully');
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast.error(error.message || 'Failed to upload image');
+    } finally {
+      setIsUploading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -69,13 +149,37 @@ const ProfilePage = () => {
             <Card className="mb-6">
               <CardContent className="p-8 text-center">
                 <div className="relative inline-block">
-                  <div className="w-24 h-24 bg-[#277310] rounded-full flex items-center justify-center mx-auto">
-                    <User className="w-12 h-12 text-white" />
-                  </div>
-                  <button className="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center text-[#277310] hover:bg-gray-50">
-                    <Camera className="w-4 h-4" />
-                  </button>
+                  {avatarUrl ? (
+                    <img 
+                      src={avatarUrl} 
+                      alt="Profile" 
+                      className="w-24 h-24 rounded-full object-cover mx-auto"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 bg-[#277310] rounded-full flex items-center justify-center mx-auto">
+                      <User className="w-12 h-12 text-white" />
+                    </div>
+                  )}
+                  {isUploading ? (
+                    <div className="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center">
+                      <Loader2 className="w-4 h-4 text-[#277310] animate-spin" />
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center text-[#277310] hover:bg-gray-50"
+                    >
+                      <Camera className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
                 <h2 className="text-xl font-bold text-gray-900 mt-4">
                   {user?.firstName} {user?.lastName}
                 </h2>
