@@ -26,7 +26,7 @@ const ProfilePage = () => {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.avatarUrl || null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.avatar || null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -63,7 +63,7 @@ const ProfilePage = () => {
       const filePath = `${user.id}/${fileName}`;
 
       // Upload to Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file, {
           cacheControl: '3600',
@@ -93,7 +93,7 @@ const ProfilePage = () => {
 
       // Update local state
       setAvatarUrl(publicUrl);
-      updateProfile({ ...formData, avatarUrl: publicUrl });
+      updateProfile({ ...formData, avatar: publicUrl });
       
       toast.success('Profile picture updated successfully');
     } catch (error: any) {
