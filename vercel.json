@@ -1,0 +1,5 @@
+{
+  "buildCommand": "cd app && npm install --ignore-scripts && npm run build",
+  "installCommand": "npm install --ignore-scripts",
+  "framework": "vite"
+}
