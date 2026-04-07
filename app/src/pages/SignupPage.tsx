@@ -22,21 +22,36 @@ const SignupPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1);
+  const [passwordError, setPasswordError] = useState('');
   const navigate = useNavigate();
   const { signup } = useAuthStore();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    
+    // Clear password error when user types
+    if (name === 'confirmPassword' || name === 'password') {
+      if (formData.password === value) {
+        setPasswordError('');
+      }
+    }
   };
+
+  // Computed property to check if passwords match
+  const passwordsMatch = formData.password === formData.confirmPassword;
+  const canSubmit = passwordsMatch && formData.password && formData.confirmPassword && !isLoading;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (formData.password !== formData.confirmPassword) {
+      setPasswordError('Passwords do not match');
       toast.error('Passwords do not match');
       return;
     }
 
+    setPasswordError('');
     setIsLoading(true);
 
     try {
@@ -343,10 +358,13 @@ const SignupPage = () => {
                       placeholder="Confirm your password"
                       value={formData.confirmPassword}
                       onChange={handleChange}
-                      className="pl-10 h-12"
+                      className={`pl-10 h-12 ${passwordError ? 'border-red-500 focus:border-red-500' : ''}`}
                       required
                     />
                   </div>
+                  {passwordError && (
+                    <p className="text-red-500 text-sm mt-1">{passwordError}</p>
+                  )}
                 </div>
 
                 <div className="flex items-start gap-2">
@@ -379,8 +397,8 @@ const SignupPage = () => {
                   </Button>
                   <Button
                     type="submit"
-                    disabled={isLoading}
-                    className="flex-1 h-12 bg-[#277310] hover:bg-[#1e5a10] text-white font-medium"
+                    disabled={!canSubmit}
+                    className="flex-1 h-12 bg-[#277310] hover:bg-[#1e5a10] text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isLoading ? (
                       <motion.div
