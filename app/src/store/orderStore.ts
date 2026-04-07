@@ -106,15 +106,28 @@ export const useOrderStore = create<OrderState>()(
       fetchOrders: async () => {
         set({ isLoading: true });
         try {
-          const user = useAuthStore.getState().user;
+          let user = useAuthStore.getState().user;
           console.log('[OrderStore] Fetching orders, user role:', user?.role, 'user email:', user?.email);
           
           if (!user) {
             console.log('[OrderStore] No user in auth store, waiting...');
-            // Wait a moment for auth to initialize
             await new Promise(r => setTimeout(r, 500));
-            const refreshedUser = useAuthStore.getState().user;
-            console.log('[OrderStore] After wait, user:', refreshedUser?.role);
+            user = useAuthStore.getState().user;
+            console.log('[OrderStore] After wait, user:', user?.role, user?.email);
+          }
+          
+          let response;
+          
+          // Force admin check - use specific email as fallback
+          const isAdmin = user?.role === 'admin' || user?.email === 'oleaisah@gmail.com';
+          console.log('[OrderStore] Is admin?', isAdmin);
+          
+          if (isAdmin) {
+            response = await adminApi.getOrders();
+            console.log('[OrderStore] Admin fetch response:', response);
+          } else {
+            console.log('[OrderStore] Calling user order API (not admin)');
+            response = await orderApi.getOrders();
           }
           
           let response;
