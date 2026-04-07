@@ -116,26 +116,16 @@ export const useOrderStore = create<OrderState>()(
             console.log('[OrderStore] After wait, user:', user?.role, user?.email);
           }
           
-          let response;
-          
           // Force admin check - use specific email as fallback
           const isAdmin = user?.role === 'admin' || user?.email === 'oleaisah@gmail.com';
           console.log('[OrderStore] Is admin?', isAdmin);
           
+          let response;
           if (isAdmin) {
             response = await adminApi.getOrders();
             console.log('[OrderStore] Admin fetch response:', response);
           } else {
             console.log('[OrderStore] Calling user order API (not admin)');
-            response = await orderApi.getOrders();
-          }
-          
-          let response;
-          
-          if (user?.role === 'admin') {
-            response = await adminApi.getOrders();
-            console.log('[OrderStore] Admin fetch response:', response);
-          } else {
             response = await orderApi.getOrders();
           }
           

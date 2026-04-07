@@ -50,11 +50,29 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   fetchAllOrders: async () => {
     set({ isLoading: true });
     try {
+      console.log('[AdminStore] Fetching all orders...');
       const response = await adminApi.getOrders();
+      console.log('[AdminStore] Orders response:', response);
       if (response.data) {
         set({ allOrders: (response.data as { orders: Order[] }).orders || [], isLoading: false });
       }
-    } catch {
+    } catch (error) {
+      console.error('[AdminStore] Failed to fetch orders:', error);
+      set({ isLoading: false });
+    }
+  },
+
+  fetchAllRunners: async () => {
+    set({ isLoading: true });
+    try {
+      console.log('[AdminStore] Fetching all runners...');
+      const response = await adminApi.getRunners();
+      console.log('[AdminStore] Runners response:', response);
+      if (response.data) {
+        set({ allRunners: (response.data as { runners: Runner[] }).runners || [], isLoading: false });
+      }
+    } catch (error) {
+      console.error('[AdminStore] Failed to fetch runners:', error);
       set({ isLoading: false });
     }
   },
@@ -62,11 +80,14 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   fetchAllUsers: async () => {
     set({ isLoading: true });
     try {
+      console.log('[AdminStore] Fetching all users...');
       const response = await adminApi.getUsers();
+      console.log('[AdminStore] Users response:', response);
       if (response.data) {
         set({ allUsers: (response.data as { users: User[] }).users || [], isLoading: false });
       }
-    } catch {
+    } catch (error) {
+      console.error('[AdminStore] Failed to fetch users:', error);
       set({ isLoading: false });
     }
   },
