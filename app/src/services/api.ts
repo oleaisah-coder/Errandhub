@@ -40,6 +40,7 @@ async function fetchApi<T>(
   retryCount = 0
 ): Promise<ApiResponse<T>> {
   const url = `${API_BASE_URL}${endpoint}`;
+  console.log(`[API] Calling: ${url}`, { method: options.method || 'GET' });
   
   const headers: Record<string, string> = {
     ...((options.headers as Record<string, string>) || {})

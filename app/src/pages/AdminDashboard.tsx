@@ -51,7 +51,9 @@ const AdminDashboard = () => {
           fetchRunners(),
           fetchAdminStats()
         ]);
-        console.log("Admin data loaded", { orders: orders?.length });
+        // Get fresh state after fetch
+        const state = useOrderStore.getState();
+        console.log("Admin Orders Loaded:", state.orders);
       } catch (error) {
         console.error("Dashboard data fetch failed:", error);
       }
