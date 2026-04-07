@@ -32,7 +32,8 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
-import { useAuthStore, useOrderStore, useRunnerStore } from '@/store';
+import { useAuthStore, useOrderStore, useRunnerStore, useAdminStore } from '@/store';
+import { adminApi } from '@/services/api';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -40,6 +41,8 @@ const AdminDashboard = () => {
   console.log('[AdminDash] Auth user:', authUser);
   const { orders, updateOrderStatus, clearAllOrders, fetchOrders, fetchAdminStats, adminStats } = useOrderStore();
   const { runners, fetchRunners, isLoading: isRunnersLoading } = useRunnerStore();
+  const { allUsers, fetchAllUsers } = useAdminStore();
+  
   // Load dashboard data on mount
   useEffect(() => {
     console.log("Admin Component Mounted", { hasOrders: !!orders, hasRunners: !!runners, role: useAuthStore.getState()?.user?.role });
@@ -49,11 +52,14 @@ const AdminDashboard = () => {
         await Promise.all([
           fetchOrders(),
           fetchRunners(),
-          fetchAdminStats()
+          fetchAdminStats(),
+          fetchAllUsers()
         ]);
         // Get fresh state after fetch
         const state = useOrderStore.getState();
+        const adminState = useAdminStore.getState();
         console.log("Admin Orders Loaded:", state.orders);
+        console.log("Admin Users Loaded:", adminState.allUsers);
       } catch (error) {
         console.error("Dashboard data fetch failed:", error);
       }
@@ -62,7 +68,7 @@ const AdminDashboard = () => {
     // Refresh interval for live dashboard feel
     const interval = setInterval(loadData, 30000); 
     return () => clearInterval(interval);
-  }, [fetchOrders, fetchRunners, fetchAdminStats]);
+  }, [fetchOrders, fetchRunners, fetchAdminStats, fetchAllUsers]);
 
   const handleClearAll = () => {
     if (window.confirm('Are you sure you want to remove ALL orders? This will clear all dashboards.')) {
@@ -105,7 +111,7 @@ const AdminDashboard = () => {
     return idMatch || userIdMatch;
   });
 
-  // Extract unique users for the Users tab
+  // Fallback for when orders exist but we want customer info
   const uniqueUserIds = Array.from(new Set((orders || []).map(o => o?.userId).filter(Boolean)));
   const mockUsers = uniqueUserIds.map(id => {
     const userOrder = (orders || []).find(o => o?.userId === id);
@@ -118,6 +124,9 @@ const AdminDashboard = () => {
       spent: (orders || []).filter(o => o?.userId === id).reduce((sum, o) => sum + (Number(o?.totalAmount) || 0), 0)
     };
   });
+
+  // Users for the Users tab - use actual users from admin store
+  const displayUsers = allUsers.length > 0 ? allUsers : mockUsers;
 
   const handleLogout = () => {
     logout();
@@ -727,7 +736,7 @@ const AdminDashboard = () => {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                          {mockUsers.map((user) => (
+                          {displayUsers.map((user) => (
                             <tr key={user.id} className="hover:bg-slate-50/50 transition-colors">
                               <td className="py-4 px-6">
                                 <div className="flex items-center gap-3">
@@ -749,7 +758,7 @@ const AdminDashboard = () => {
                               </td>
                             </tr>
                           ))}
-                          {(!mockUsers || mockUsers.length === 0) && (
+                          {(!displayUsers || displayUsers.length === 0) && (
                             <tr>
                               <td colSpan={4} className="py-12 text-center text-slate-500 font-medium">No customers registered in the system yet.</td>
                             </tr>
