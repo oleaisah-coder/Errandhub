@@ -70,6 +70,8 @@ async function fetchApi<T>(
       headers,
     });
 
+    console.log(`[API] Response from ${url}:`, { status: response.status, ok: response.ok });
+
     // Handle 401 Unauthorized
     if (response.status === 401 && !endpoint.includes('/auth/') && retryCount === 0) {
       console.warn('API 401 Unauthorized. Attempting session refresh...');
