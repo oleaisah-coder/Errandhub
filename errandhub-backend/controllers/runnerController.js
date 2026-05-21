@@ -1,5 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
 const { pool } = require('../config/database');
+const { sendOrderStatusEmail } = require('../services/emailService');
 
 // Get available tasks for runners
 const getAvailableTasks = async (req, res) => {
@@ -179,6 +180,24 @@ const acceptTask = async (req, res) => {
       ]
     );
 
+    // Send email notification to user
+    const userResult = await pool.query(
+      'SELECT email, first_name FROM users WHERE id = $1',
+      [order.user_id]
+    );
+    if (userResult.rows.length > 0) {
+      const user = userResult.rows[0];
+      sendOrderStatusEmail(
+        user.email,
+        user.first_name,
+        order.order_number,
+        'runner_assigned',
+        `${runnerName.first_name} ${runnerName.last_name} has accepted your order.`
+      ).catch(err => {
+        console.error('Failed to send task accepted email:', err);
+      });
+    }
+
     res.json({ message: 'Task accepted successfully' });
   } catch (error) {
     console.error('Accept task error:', error);
@@ -276,6 +295,24 @@ const updateTaskStatus = async (req, res) => {
         id,
       ]
     );
+
+    // Send email notification to user
+    const userResult = await pool.query(
+      'SELECT email, first_name FROM users WHERE id = $1',
+      [order.user_id]
+    );
+    if (userResult.rows.length > 0) {
+      const user = userResult.rows[0];
+      sendOrderStatusEmail(
+        user.email,
+        user.first_name,
+        order.order_number,
+        status,
+        statusMessages[status] || `Your order status has been updated to ${status}.`
+      ).catch(err => {
+        console.error('Failed to send task status update email:', err);
+      });
+    }
 
     res.json({ message: 'Status updated successfully' });
   } catch (error) {

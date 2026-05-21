@@ -1,5 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
 const { pool } = require('../config/database');
+const { sendOrderCreatedEmail, sendOrderStatusEmail } = require('../services/emailService');
 
 // Generate order number
 const generateOrderNumber = () => {
@@ -94,6 +95,19 @@ const createOrder = async (req, res) => {
     await client.query('COMMIT');
 
     const order = orderResult.rows[0];
+
+    // Send order created email
+    sendOrderCreatedEmail(req.user.email, req.user.first_name, {
+      id: orderId,
+      orderNumber,
+      errandType,
+      items,
+      deliveryFee,
+      serviceFee,
+      totalAmount
+    }).catch(err => {
+      console.error('Failed to send order created email:', err);
+    });
 
     res.status(201).json({
       message: 'Order created successfully',
@@ -317,9 +331,12 @@ const updateOrderStatus = async (req, res) => {
     const userId = req.user.id;
     const userRole = req.user.role;
 
-    // Get current order
+    // Get current order and user details
     const orderResult = await pool.query(
-      'SELECT * FROM orders WHERE id = $1',
+      `SELECT o.*, u.email, u.first_name 
+       FROM orders o 
+       JOIN users u ON o.user_id = u.id 
+       WHERE o.id = $1`,
       [id]
     );
 
@@ -392,6 +409,17 @@ const updateOrderStatus = async (req, res) => {
       ]
     );
 
+    // Send status update email
+    sendOrderStatusEmail(
+      order.email,
+      order.first_name,
+      order.order_number,
+      status,
+      statusMessages[status] || `Your order status has been updated to ${status}.`
+    ).catch(err => {
+      console.error('Failed to send order status email:', err);
+    });
+
     res.json({
       message: 'Order status updated successfully',
       order: {
@@ -412,9 +440,12 @@ const assignRunner = async (req, res) => {
     const { id } = req.params;
     const { runnerId } = req.body;
 
-    // Check if order exists
+    // Check if order exists and join user details
     const orderResult = await pool.query(
-      'SELECT * FROM orders WHERE id = $1',
+      `SELECT o.*, u.email, u.first_name 
+       FROM orders o 
+       JOIN users u ON o.user_id = u.id 
+       WHERE o.id = $1`,
       [id]
     );
 
@@ -455,6 +486,17 @@ const assignRunner = async (req, res) => {
       ]
     );
 
+    // Send email to user that runner was assigned
+    sendOrderStatusEmail(
+      order.email,
+      order.first_name,
+      order.order_number,
+      'runner_assigned',
+      `${runner.first_name} ${runner.last_name} has been assigned to your order.`
+    ).catch(err => {
+      console.error('Failed to send runner assigned email:', err);
+    });
+
     res.json({
       message: 'Runner assigned successfully',
       order: {
@@ -476,9 +518,12 @@ const cancelOrder = async (req, res) => {
     const userId = req.user.id;
     const userRole = req.user.role;
 
-    // Get order
+    // Get order and user details
     const orderResult = await pool.query(
-      'SELECT * FROM orders WHERE id = $1',
+      `SELECT o.*, u.email, u.first_name 
+       FROM orders o 
+       JOIN users u ON o.user_id = u.id 
+       WHERE o.id = $1`,
       [id]
     );
 
@@ -522,6 +567,17 @@ const cancelOrder = async (req, res) => {
         id,
       ]
     );
+
+    // Send cancel email
+    sendOrderStatusEmail(
+      order.email,
+      order.first_name,
+      order.order_number,
+      'cancelled',
+      'Your order has been cancelled.'
+    ).catch(err => {
+      console.error('Failed to send order cancelled email:', err);
+    });
 
     res.json({ message: 'Order cancelled successfully' });
   } catch (error) {

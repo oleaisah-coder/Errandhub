@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 const { pool } = require('../config/database');
 const { generateToken } = require('../middleware/auth');
+const { sendWelcomeEmail } = require('../services/emailService');
 
 const SALT_ROUNDS = 12;
 
@@ -55,6 +56,11 @@ const signup = async (req, res) => {
 
     // Generate token
     const token = generateToken(userId);
+
+    // Send welcome email
+    sendWelcomeEmail(user.email, user.first_name).catch(err => {
+      console.error('Failed to send welcome email:', err);
+    });
 
     res.status(201).json({
       message: 'User created successfully',
