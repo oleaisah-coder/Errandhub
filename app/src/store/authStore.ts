@@ -24,6 +24,7 @@ interface AuthState {
   subscribeToAuthChanges: () => { unsubscribe: () => void };
   login: (email: string, password: string) => Promise<{success: boolean; error?: string}>;
   signup: (data: SignupData) => Promise<{success: boolean; error?: string}>;
+  loginWithGoogle: (role?: 'user' | 'runner') => Promise<{success: boolean; error?: string}>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<User>) => void;
   setUser: (user: User) => void;
@@ -106,11 +107,47 @@ export const useAuthStore = create<AuthState>()(
               set({ session, token: session.access_token, isAuthenticated: true });
 
               // Re-fetch profile to get role/display data from the DB
-              const { data: profile, error: profileError } = await supabase
+              let { data: profile, error: profileError } = await supabase
                 .from('users')
                 .select('*')
                 .eq('id', session.user.id)
                 .single();
+
+              if (profileError || !profile) {
+                console.log('Profile not found, auto-creating from social login/signup...');
+                const metadata = session.user.user_metadata;
+                const fullName = metadata?.full_name || '';
+                const parts = fullName.split(' ');
+                const firstName = metadata?.firstName || metadata?.first_name || parts[0] || 'User';
+                const lastName = metadata?.lastName || metadata?.last_name || parts.slice(1).join(' ') || '';
+                
+                // Read chosen role from localStorage if set during oauth signup
+                const chosenRole = localStorage.getItem('oauth_role') || 'user';
+                localStorage.removeItem('oauth_role');
+
+                const newProfile = {
+                  id: session.user.id,
+                  email: session.user.email as string,
+                  first_name: firstName,
+                  last_name: lastName,
+                  phone: metadata?.phone || '',
+                  role: chosenRole,
+                  is_active: true
+                };
+
+                const { data: upsertedProfile, error: upsertError } = await supabase
+                  .from('users')
+                  .upsert(newProfile, { onConflict: 'id' })
+                  .select()
+                  .single();
+
+                if (!upsertError && upsertedProfile) {
+                  profile = upsertedProfile;
+                  profileError = null;
+                } else {
+                  console.warn('Auto-profile upsert failed:', upsertError?.message);
+                }
+              }
 
               if (profileError) {
                 console.warn('Profile fetch failed during auth transition:', profileError.message);
@@ -319,6 +356,30 @@ export const useAuthStore = create<AuthState>()(
           console.error('Signup error in store:', error);
           set({ isLoading: false });
           return { success: false, error: error.message || 'Server error' };
+        }
+      },
+
+      loginWithGoogle: async (role?: 'user' | 'runner') => {
+        set({ isLoading: true });
+        try {
+          if (role) {
+            localStorage.setItem('oauth_role', role);
+          }
+          const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+              redirectTo: window.location.origin
+            }
+          });
+          if (error) {
+            set({ isLoading: false });
+            return { success: false, error: error.message };
+          }
+          return { success: true };
+        } catch (error: any) {
+          console.error('Google login error in store:', error);
+          set({ isLoading: false });
+          return { success: false, error: error.message || 'Crashed during login execution' };
         }
       },
 
