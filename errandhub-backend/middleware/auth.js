@@ -74,9 +74,9 @@ const authenticate = async (req, res, next) => {
       const phone = metadata.phone || '';
 
       const insertResult = await pool.query(
-        `INSERT INTO users (id, first_name, last_name, email, phone, role, is_active)
-         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, first_name, last_name, email, phone, role, is_active`,
-        [userId, firstName, lastName, email, phone, 'user', true]
+        `INSERT INTO users (id, first_name, last_name, email, phone, role, is_active, password_hash)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, first_name, last_name, email, phone, role, is_active`,
+        [userId, firstName, lastName, email, phone, 'user', true, '']
       );
       result = insertResult;
       console.log(`Auto-created user profile for ${email} (${userId})`);
