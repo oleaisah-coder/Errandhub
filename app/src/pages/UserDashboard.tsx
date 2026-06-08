@@ -125,6 +125,14 @@ const UserDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const { user, logout } = useAuthStore();
+
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      navigate('/admin-dashboard', { replace: true });
+    } else if (user?.role === 'runner') {
+      navigate('/runner-dashboard', { replace: true });
+    }
+  }, [user, navigate]);
   const { fetchOrders, getUserOrders } = useOrderStore();
   const { getUserNotifications, getUnreadCount } = useNotificationStore();
   const { balance } = useWalletStore();
