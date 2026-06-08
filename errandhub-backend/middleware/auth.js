@@ -57,16 +57,31 @@ const authenticate = async (req, res, next) => {
     }
 
     // Sync with local users table to get role and extra info
-    const result = await pool.query(
+    let result = await pool.query(
       'SELECT id, first_name, last_name, email, phone, role, is_active FROM users WHERE id = $1',
       [userId]
     );
 
     if (result.rows.length === 0) {
-      return res.status(401).json({ message: 'User not found in system.' });
-    } else {
-      req.user = result.rows[0];
+      // Auto-create user profile for OAuth/Supabase users
+      const metadata = supaData?.user?.user_metadata || {};
+      const fullName = metadata.full_name || metadata.name || '';
+      const parts = fullName.split(' ');
+      const firstName = metadata.firstName || metadata.first_name || parts[0] || 'User';
+      const lastName = metadata.lastName || metadata.last_name || parts.slice(1).join(' ') || '';
+      const email = supaData?.user?.email || '';
+      const phone = metadata.phone || '';
+
+      const insertResult = await pool.query(
+        `INSERT INTO users (id, first_name, last_name, email, phone, role, is_active)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, first_name, last_name, email, phone, role, is_active`,
+        [userId, firstName, lastName, email, phone, 'user', true]
+      );
+      result = insertResult;
+      console.log(`Auto-created user profile for ${email} (${userId})`);
     }
+
+    req.user = result.rows[0];
     
     if (!req.user.is_active) {
       return res.status(401).json({ message: 'Account is deactivated.' });
