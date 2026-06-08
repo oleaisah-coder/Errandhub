@@ -35,6 +35,7 @@ const authenticate = async (req, res, next) => {
     }
 
     let userId;
+    let supaUser;
 
     // First attempt to verify as a Supabase token
     const client = getSupabase();
@@ -42,6 +43,7 @@ const authenticate = async (req, res, next) => {
       const { data: supaData, error: supaError } = await client.auth.getUser(token);
       if (!supaError && supaData?.user) {
         userId = supaData.user.id;
+        supaUser = supaData.user;
       }
     }
 
@@ -63,13 +65,12 @@ const authenticate = async (req, res, next) => {
     );
 
     if (result.rows.length === 0) {
-      // Auto-create user profile for OAuth/Supabase users
-      const metadata = supaData?.user?.user_metadata || {};
+      const metadata = supaUser?.user_metadata || {};
       const fullName = metadata.full_name || metadata.name || '';
       const parts = fullName.split(' ');
       const firstName = metadata.firstName || metadata.first_name || parts[0] || 'User';
       const lastName = metadata.lastName || metadata.last_name || parts.slice(1).join(' ') || '';
-      const email = supaData?.user?.email || '';
+      const email = supaUser?.email || '';
       const phone = metadata.phone || '';
 
       const insertResult = await pool.query(
