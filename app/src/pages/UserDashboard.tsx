@@ -139,8 +139,8 @@ const UserDashboard = () => {
   const notifications = user ? getUserNotifications(user.id) : [];
   const unreadCount = user ? getUnreadCount(user.id) : 0;
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/');
     toast.success('Logged out successfully');
   };

@@ -48,8 +48,8 @@ const Navbar = () => {
     { name: 'Contact', href: '/contact' },
   ];
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/');
   };
 

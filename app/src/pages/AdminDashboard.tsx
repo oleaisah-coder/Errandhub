@@ -134,10 +134,9 @@ const AdminDashboard = () => {
       }))
     : mockUsers;
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/');
-    toast.success('Logged out successfully');
   };
 
   const handleUpdateStatus = async (orderId: string, status: string) => {

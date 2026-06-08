@@ -41,18 +41,13 @@ export const useAuthStore = create<AuthState>()(
       isInitialized: false,
 
       initAuth: async () => {
-        // Eagerly fetch the session so we can set isInitialized immediately
-        // without waiting for onAuthStateChange to fire.
         try {
           const { data: { session } } = await supabase.auth.getSession();
           if (session) {
             localStorage.setItem('token', session.access_token);
-            // Partially update session so ProtectedRoute knows auth is ready
             set((state) => ({
               session,
               token: session.access_token,
-              // Only override isAuthenticated/user if they haven't been set yet
-              // (the onAuthStateChange listener will do a full profile sync)
               isAuthenticated: state.isAuthenticated || true,
             }));
           } else {
@@ -65,19 +60,14 @@ export const useAuthStore = create<AuthState>()(
       },
 
       subscribeToAuthChanges: () => {
-        // ── Step 1: Eagerly resolve the current session so the UI never hangs ──
-        // onAuthStateChange fires INITIAL_SESSION asynchronously. Calling getSession()
-        // first guarantees that isInitialized is set even if the listener is slow.
         supabase.auth.getSession().then(({ data: { session } }) => {
           if (!useAuthStore.getState().isInitialized) {
-            // Only apply if the listener hasn't already run
             if (session) {
               set({
                 session,
                 token: session.access_token,
                 isAuthenticated: true,
                 isLoading: false,
-                // Don't set isInitialized yet – let the full listener do the profile fetch
               });
             } else {
               set({
@@ -91,22 +81,18 @@ export const useAuthStore = create<AuthState>()(
             }
           }
         }).catch(() => {
-          // Network error – fail safe: unblock the UI
           if (!useAuthStore.getState().isInitialized) {
             set({ session: null, isLoading: false, isInitialized: true });
           }
         });
 
-        // ── Step 2: Full auth state listener with profile sync ──
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
           console.log(`Auth event: ${event}`);
 
           try {
             if (session && session.user) {
-              // Always update session reference immediately
               set({ session, token: session.access_token, isAuthenticated: true });
 
-              // Re-fetch profile to get role/display data from the DB
               let { data: profile, error: profileError } = await supabase
                 .from('users')
                 .select('*')
@@ -121,7 +107,6 @@ export const useAuthStore = create<AuthState>()(
                 const firstName = metadata?.firstName || metadata?.first_name || parts[0] || 'User';
                 const lastName = metadata?.lastName || metadata?.last_name || parts.slice(1).join(' ') || '';
                 
-                // Read chosen role from localStorage if set during oauth signup
                 const chosenRole = localStorage.getItem('oauth_role') || 'user';
                 localStorage.removeItem('oauth_role');
 
@@ -183,7 +168,6 @@ export const useAuthStore = create<AuthState>()(
                 isInitialized: true,
               });
             } else {
-              // Signed out or session expired
               set({
                 user: null,
                 session: null,
@@ -195,7 +179,6 @@ export const useAuthStore = create<AuthState>()(
             }
           } catch (error) {
             console.error('Fatal error in auth store listener:', error);
-            // Fail-safe: always unblock the UI
             set({ isLoading: false, isInitialized: true });
           }
         });
@@ -206,7 +189,6 @@ export const useAuthStore = create<AuthState>()(
       login: async (email: string, password: string) => {
         set({ isLoading: true });
         try {
-          // Native Supabase Login
           const { data, error } = await supabase.auth.signInWithPassword({
             email,
             password,
@@ -216,69 +198,45 @@ export const useAuthStore = create<AuthState>()(
             set({ isLoading: false });
             let errorMsg = error.message;
             if (errorMsg.toLowerCase().includes('invalid login credentials')) {
-              // Check if user actually exists to fulfill the exact string matching requested
-              const { data: userCheck } = await supabase.from('users').select('id').eq('email', email).single();
-              if (!userCheck) {
-                errorMsg = 'Account not found';
-              } else {
-                errorMsg = 'Incorrect password';
-              }
+              errorMsg = 'Invalid email or password';
             } else if (errorMsg.toLowerCase().includes('email not confirmed')) {
-              errorMsg = 'Please confirm your email address to log in. Check your inbox for a verification link.';
+              errorMsg = 'Please confirm your email. Check your inbox, or disable email confirmation in Supabase dashboard.';
             }
             return { success: false, error: errorMsg };
           }
 
           if (data.session && data.user) {
-            try {
-              // Sync/Fetch native profile from Supabase
-              const { data: profile } = await supabase
-                .from('users')
-                .select('*')
-                .eq('id', data.user.id)
-                .single();
+            const { data: profile } = await supabase
+              .from('users')
+              .select('*')
+              .eq('id', data.user.id)
+              .single();
 
-              // Wait for onAuthStateChange to fire or manually set to be safe
-              // This ensures the store is in sync BEFORE the redirect.
-              set({ 
-                user: (profile ? {
-                  id: profile.id,
-                  firstName: profile.first_name,
-                  lastName: profile.last_name,
-                  email: profile.email,
-                  role: profile.role || 'user',
-                  phone: profile.phone || '',
-                } : {
-                  id: data.user.id,
-                  email: data.user.email as string,
-                  firstName: data.user.user_metadata?.firstName || 'User',
-                  lastName: data.user.user_metadata?.lastName || '',
-                  role: data.user.user_metadata?.role || 'user',
-                  phone: data.user.user_metadata?.phone || '',
-                }) as unknown as User, 
-                token: data.session.access_token, 
-                isAuthenticated: true, 
-                isLoading: false,
-                isInitialized: true
-              });
+            const metadata = data.user.user_metadata;
 
-              // Verify session is persistable as requested
-              // Use a timeout to prevent infinite spinning if getSession is slow
-              const verifiedSession = await Promise.race([
-                supabase.auth.getSession().then(res => res.data.session),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Session timeout')), 2000))
-              ]).catch(() => data.session); // Fallback to original session if verification times out
+            set({ 
+              user: (profile ? {
+                id: profile.id,
+                firstName: profile.first_name,
+                lastName: profile.last_name,
+                email: profile.email,
+                role: profile.role || 'user',
+                phone: profile.phone || '',
+              } : {
+                id: data.user.id,
+                email: data.user.email as string,
+                firstName: metadata?.firstName || 'User',
+                lastName: metadata?.lastName || '',
+                role: metadata?.role || 'user',
+                phone: metadata?.phone || '',
+              }) as unknown as User, 
+              token: data.session.access_token, 
+              isAuthenticated: true, 
+              isLoading: false,
+              isInitialized: true
+            });
 
-              if (!verifiedSession) {
-                console.warn('Session verification failed, but continuing with initial session');
-              }
-
-              return { success: true };
-            } catch (innerError: any) {
-              console.error('Error during post-login sync:', innerError);
-              // Still return success as auth was successful, listener will handle state eventually
-              return { success: true };
-            }
+            return { success: true };
           }
           
           set({ isLoading: false });
@@ -286,7 +244,7 @@ export const useAuthStore = create<AuthState>()(
         } catch (error: any) {
           console.error('Login error in store:', error);
           set({ isLoading: false });
-          return { success: false, error: error.message || 'Crashed during login execution' };
+          return { success: false, error: error.message || 'Login failed' };
         }
       },
 
@@ -386,6 +344,7 @@ export const useAuthStore = create<AuthState>()(
       logout: async () => {
         await supabase.auth.signOut();
         localStorage.removeItem('token');
+        localStorage.removeItem('auth-storage');
         set({ user: null, session: null, token: null, isAuthenticated: false });
       },
 
