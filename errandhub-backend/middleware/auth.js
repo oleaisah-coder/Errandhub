@@ -80,13 +80,9 @@ const authenticate = async (req, res, next) => {
       );
 
       if (existing.rows.length > 0) {
-        // Link OAuth user to existing account by updating the ID
-        await pool.query('UPDATE users SET id = $1 WHERE email = $2', [userId, email]);
-        result = await pool.query(
-          'SELECT id, first_name, last_name, email, phone, role, is_active FROM users WHERE id = $1',
-          [userId]
-        );
-        console.log(`Linked OAuth user ${userId} to existing profile for ${email}`);
+        // Use the existing user record (their ID has FK references)
+        result = existing;
+        console.log(`Matched OAuth user to existing profile for ${email}`);
       } else {
         const insertResult = await pool.query(
           `INSERT INTO users (id, first_name, last_name, email, phone, role, is_active, password_hash)
