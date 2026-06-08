@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd app && npm install --ignore-scripts && npm run build && cp public/onboarding.js dist/",
+  "buildCommand": "cd app && npm install --ignore-scripts && npm run build",
   "installCommand": "cd app && npm install --ignore-scripts",
   "outputDirectory": "app/dist"
 }
