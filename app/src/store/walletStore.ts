@@ -13,7 +13,7 @@ export interface WalletState {
   getTransactionHistory: () => Transaction[];
 }
 
-export const useWalletStore = create<WalletState>()((set, get) => ({
+export const useWalletStore = create<WalletState>((set, get) => ({
   balance: 0,
   transactions: [],
   isLoading: false,
