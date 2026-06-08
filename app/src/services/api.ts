@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://errandhub.onrender.com/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://errandhub-1.onrender.com/api';
 
 // Shared promise to prevent concurrent getSession calls from "stealing locks"
 let sessionPromise: Promise<any> | null = null;
@@ -46,17 +46,10 @@ async function fetchApi<T>(
     ...((options.headers as Record<string, string>) || {})
   };
 
-  // Strictly follow the requested pattern for every protected API call
-  const { data: { session } } = await getFreshSession();
-  
-  if (session?.access_token) {
-    headers['Authorization'] = `Bearer ${session.access_token}`;
-  } else if (!endpoint.includes('/auth/')) {
-    // If no session for a protected route, check the store as fallback
-    const storeToken = useAuthStore.getState().token;
-    if (storeToken) {
-       headers['Authorization'] = `Bearer ${storeToken}`;
-    }
+  // Use stored token (set by Supabase or backend login)
+  const storeToken = useAuthStore.getState().token;
+  if (storeToken && !endpoint.includes('/auth/')) {
+    headers['Authorization'] = `Bearer ${storeToken}`;
   }
 
   // Don't set Content-Type for FormData — browser sets it with boundary automatically
@@ -65,40 +58,22 @@ async function fetchApi<T>(
   }
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
     const response = await fetch(url, {
       ...options,
       headers,
+      signal: controller.signal,
     });
 
+    clearTimeout(timeoutId);
     console.log(`[API] Response from ${url}:`, { status: response.status, ok: response.ok });
 
     // Handle 401 Unauthorized
     if (response.status === 401 && !endpoint.includes('/auth/') && retryCount === 0) {
-      console.warn('API 401 Unauthorized. Attempting session refresh...');
-      
-      try {
-        // Try to get a fresh session (this will attempt refresh if expired)
-        const { data: { session: newSession } } = await supabase.auth.getSession();
-        
-        if (newSession) {
-          // Retry once with new session
-          return fetchApi(endpoint, options, retryCount + 1);
-        } else {
-          // Session truly gone, inform but don't hard redirect in all cases
-          console.error('Session refresh failed.');
-          
-          // Only redirect if we ARE NOT in bypass mode
-          const isBypass = localStorage.getItem('DEV_BYPASS') === 'true' || window.location.search.includes('bypass=true');
-          if (!isBypass && typeof window !== 'undefined') {
-            // Instead of hard-redirecting immediately, we let the app handle it 
-            // via its own route protection or a toast.
-            // window.location.href = '/login'; 
-          }
-          return { error: 'Session expired. Please log in again.' };
-        }
-      } catch {
-        return { error: 'Session verification failed.' };
-      }
+      console.warn('API 401 Unauthorized.');
+      return { error: 'Session expired. Please log in again.' };
     }
 
     const data = await response.json();
@@ -319,6 +294,46 @@ export const notificationApi = {
 };
 
 
+// Payment API
+export const paymentApi = {
+  getWallet: () => fetchApi<any>('/payments/wallet'),
+
+  initializeWalletFunding: (amount: number) =>
+    fetchApi<any>('/payments/initialize-wallet', {
+      method: 'POST',
+      body: JSON.stringify({ amount }),
+    }),
+
+  initializeOrderPayment: (data: {
+    errandType: string;
+    items: Array<{ name: string; quantity: number; estimatedPrice: number }>;
+    deliveryAddress: string;
+    deliveryCity: string;
+    deliveryState: string;
+    itemFee: number;
+    deliveryFee: number;
+    serviceFee: number;
+    totalAmount: number;
+    notes?: string;
+    isEmergency?: boolean;
+  }) => fetchApi<any>('/payments/initialize-order', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+
+  verifyTransaction: (transaction_id: string, tx_ref?: string) =>
+    fetchApi<any>('/payments/verify', {
+      method: 'POST',
+      body: JSON.stringify({ transaction_id, tx_ref }),
+    }),
+
+  deductFromWallet: (amount: number, order_id: string) =>
+    fetchApi<any>('/payments/deduct', {
+      method: 'POST',
+      body: JSON.stringify({ amount, order_id }),
+    }),
+};
+
 export default {
   auth: authApi,
   orders: orderApi,
@@ -326,4 +341,5 @@ export default {
   runner: runnerApi,
   chat: chatApi,
   notifications: notificationApi,
+  payment: paymentApi,
 };

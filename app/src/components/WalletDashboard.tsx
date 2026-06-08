@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Wallet, Plus, CreditCard,  ArrowRight, ArrowDownRight, ArrowUpRight, History, University, Copy } from 'lucide-react';
+import { Wallet, Plus, CreditCard,  ArrowRight, ArrowDownRight, ArrowUpRight, History, University, Copy, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -11,16 +11,42 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { useWalletStore } from '@/store';
+import { paymentApi } from '@/services/api';
+
+const FLW_PUBLIC_KEY = import.meta.env.VITE_FLUTTERWAVE_PUBLIC_KEY;
+
+function loadFlutterwaveScript(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if ((window as any).FlutterwaveCheckout) {
+      resolve();
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.flutterwave.com/v3.js';
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Failed to load Flutterwave script'));
+    document.body.appendChild(script);
+  });
+}
 
 export default function WalletDashboard() {
-  const { balance, transactions, fundAccount } = useWalletStore();
+  const { balance, transactions, fetchWallet } = useWalletStore();
   const [customAmount, setCustomAmount] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [amountToFund, setAmountToFund] = useState(0);
   const [fundingMethod, setFundingMethod] = useState<'card' | 'bank_transfer'>('card');
+  const [scriptLoaded, setScriptLoaded] = useState(false);
 
   const presetAmounts = [5000, 10000, 20000];
+
+  useEffect(() => {
+    loadFlutterwaveScript()
+      .then(() => setScriptLoaded(true))
+      .catch(() => console.warn('Flutterwave script failed to load'));
+    fetchWallet();
+  }, [fetchWallet]);
 
   const handleOpenModal = (amount: number) => {
     if (amount <= 0) {
@@ -31,36 +57,60 @@ export default function WalletDashboard() {
     setIsModalOpen(true);
   };
 
-  const simulatePayment = async () => {
-    setIsProcessing(true);
-    
-    // Simulate network request to payment gateway
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    fundAccount(amountToFund, 'Top up via Simulated Gateway');
-    
-    setIsProcessing(false);
-    setIsModalOpen(false);
-    setCustomAmount('');
-    
-    // Success toast with emojis (serves as confetti)
-    toast.success(`Successfully funded ₦${amountToFund.toLocaleString()}! 🎉🎊`, {
-      style: { background: '#277310', color: 'white', border: 'none' }
-    });
-  };
+  const handleFlutterwavePayment = useCallback(async () => {
+    if (!scriptLoaded) {
+      toast.error('Payment system loading. Please try again.');
+      return;
+    }
 
-  const simulateBankTransfer = async () => {
     setIsProcessing(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    
-    setIsProcessing(false);
-    setIsModalOpen(false);
-    setCustomAmount('');
-    
-    // Alert Admin
-    toast.success("Transfer logged! Awaiting admin verification.", {
-      icon: '🏦',
-    });
-  };
+
+    try {
+      const response = await paymentApi.initializeWalletFunding(amountToFund);
+      if (response.error) {
+        toast.error(response.error);
+        setIsProcessing(false);
+        return;
+      }
+
+      const initData = response.data as any;
+
+      (window as any).FlutterwaveCheckout({
+        public_key: FLW_PUBLIC_KEY,
+        tx_ref: initData.tx_ref,
+        amount: initData.amount,
+        currency: initData.currency || 'NGN',
+        payment_options: 'card,ussd,banktransfer',
+        customer: initData.customer,
+        callback: async (data: any) => {
+          const verifyResponse = await paymentApi.verifyTransaction(data.transaction_id, data.tx_ref);
+          if (!verifyResponse.error) {
+            toast.success(`Successfully funded ₦${amountToFund.toLocaleString()}!`, {
+              style: { background: '#277310', color: 'white', border: 'none' }
+            });
+            await fetchWallet();
+          } else {
+            toast.error('Payment verification failed. Contact support.');
+          }
+          setIsProcessing(false);
+          setIsModalOpen(false);
+          setCustomAmount('');
+        },
+        onclose: () => {
+          setIsProcessing(false);
+          toast.info('Payment cancelled');
+        },
+        customizations: {
+          title: 'ErrandHub Wallet',
+          description: `Top up ₦${amountToFund.toLocaleString()}`,
+        },
+      });
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast.error('Failed to initialize payment');
+      setIsProcessing(false);
+    }
+  }, [amountToFund, scriptLoaded, fetchWallet]);
 
   return (
     <div className="w-full max-w-2xl mx-auto space-y-6">
@@ -222,32 +272,21 @@ export default function WalletDashboard() {
 
             {fundingMethod === 'card' ? (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Card Number (Mock)</label>
-                    <Input disabled value="**** **** **** 4242" className="bg-gray-50 font-mono text-gray-500 border-gray-200" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">Expiry</label>
-                      <Input disabled value="12/26" className="bg-gray-50 font-mono text-gray-500 border-gray-200" />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">CVV</label>
-                      <Input disabled type="password" value="***" className="bg-gray-50 font-mono text-gray-500 border-gray-200" />
-                    </div>
-                  </div>
+                <div className="bg-green-50 rounded-xl p-4 border border-green-100">
+                  <p className="text-sm text-green-800 text-center">
+                    Secure payment powered by <strong>Flutterwave</strong>. Pay with card, USSD, or bank transfer.
+                  </p>
                 </div>
 
                 <Button
                   className="w-full h-14 text-lg bg-[#277310] hover:bg-[#1e5a10] shadow-lg shadow-[#277310]/20 rounded-xl"
-                  onClick={simulatePayment}
-                  disabled={isProcessing}
+                  onClick={handleFlutterwavePayment}
+                  disabled={isProcessing || !scriptLoaded}
                 >
                   {isProcessing ? (
                     <>
-                      <span>Loading...</span>
-                      Processing...
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Opening secure checkout...
                     </>
                   ) : (
                     <>
@@ -258,8 +297,7 @@ export default function WalletDashboard() {
                 </Button>
 
                 <div className="flex items-center justify-center gap-2 pt-2 text-xs text-gray-400">
-                  <span className="font-bold text-gray-900">Secure Payment</span>
-                  <span>(Mock)</span>
+                  <span className="font-bold text-gray-900">Powered by Flutterwave</span>
                 </div>
               </motion.div>
             ) : (
@@ -284,7 +322,7 @@ export default function WalletDashboard() {
                       className="text-[#277310] hover:text-[#1e5a10] hover:bg-green-50"
                       onClick={() => {
                         navigator.clipboard.writeText("1234567890");
-                        toast.success("Account number copied! 📋");
+                        toast.success("Account number copied!");
                       }}
                     >
                       <Copy className="w-4 h-4 mr-2" /> Copy
@@ -293,12 +331,32 @@ export default function WalletDashboard() {
                 </div>
                 
                 <Button
-                  onClick={simulateBankTransfer}
+                  onClick={async () => {
+                    setIsProcessing(true);
+                    try {
+                      // Record the bank-transfer funding attempt via the real API so the
+                      // transaction exists in the DB and can be verified by an admin.
+                      const response = await paymentApi.initializeWalletFunding(amountToFund);
+                      if (response.error) {
+                        toast.error(response.error || 'Could not log transfer. Please try again.');
+                      } else {
+                        setIsModalOpen(false);
+                        setCustomAmount('');
+                        toast.info('Transfer logged! Awaiting admin verification.', {
+                          description: 'Your wallet will be credited once the transfer is confirmed.'
+                        });
+                      }
+                    } catch {
+                      toast.error('Network error. Please try again.');
+                    } finally {
+                      setIsProcessing(false);
+                    }
+                  }}
                   disabled={isProcessing}
                   className="w-full h-14 bg-amber-500 hover:bg-amber-600 text-white font-bold text-lg rounded-xl shadow-lg shadow-amber-500/20"
                 >
                   {isProcessing ? (
-                    <span>Loading...</span>
+                    <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
                     "I Have Made the Transfer"
                   )}

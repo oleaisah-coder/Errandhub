@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePlacesAutocomplete, type PlacePrediction } from '@/hooks/usePlacesAutocomplete';
@@ -18,7 +18,9 @@ import {
   Pill,
   MoreHorizontal,
   Banknote,
-  Wallet
+  Wallet,
+  CreditCard,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,7 +33,7 @@ import { useAuthStore, useAddressStore } from '@/store';
 import { useWalletStore } from '@/store/walletStore';
 import { useOrderStore } from '@/store/orderStore';
 import { toast } from 'sonner';
-import { orderApi, getFreshSession } from '@/services/api';
+import { orderApi, paymentApi, getFreshSession } from '@/services/api';
 import type { OrderItem, Address, ErrandType } from '@/types';
 
 const errandTypes: { type: ErrandType; label: string; icon: React.ElementType }[] = [
@@ -44,14 +46,40 @@ const errandTypes: { type: ErrandType; label: string; icon: React.ElementType }[
   { type: 'custom', label: 'Custom Errand', icon: MoreHorizontal },
 ];
 
+const FLW_PUBLIC_KEY = import.meta.env.VITE_FLUTTERWAVE_PUBLIC_KEY;
+
+function loadFlutterwaveScript(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if ((window as any).FlutterwaveCheckout) {
+      resolve();
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.flutterwave.com/v3.js';
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Failed to load Flutterwave script'));
+    document.body.appendChild(script);
+  });
+}
+
 const RequestErrandPage = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { addresses: allAddresses, getDefaultAddress, addAddress } = useAddressStore();
   const { predictions, getPredictions, getDetails, isLoading: predictionsLoading } = usePlacesAutocomplete();
-  const { balance, deductFromBalance } = useWalletStore();
+  const { balance, fetchWallet } = useWalletStore();
   const [showPredictions, setShowPredictions] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'flutterwave'>('wallet');
+  const [flwScriptLoaded, setFlwScriptLoaded] = useState(false);
+
+  useEffect(() => {
+    fetchWallet();
+    loadFlutterwaveScript()
+      .then(() => setFlwScriptLoaded(true))
+      .catch(() => console.warn('Flutterwave script failed to load'));
+  }, [fetchWallet]);
 
   // Close predictions when clicking outside
   useEffect(() => {
@@ -174,112 +202,185 @@ const RequestErrandPage = () => {
     setStep(step + 1);
   };
 
-  const handleRequestErrand = async (e?: React.MouseEvent | React.FormEvent) => {
-    if (e) e.preventDefault();
-    
-    if (isSubmitting) return;
-
-    const { total } = calculateTotals();
-
-    // Check wallet balance first
-    if (balance < total) {
-      toast.error('Insufficient wallet balance', {
-        description: `You need ₦${total.toLocaleString()} but your balance is ₦${balance.toLocaleString()}. Please fund your wallet first.`,
-      });
+  const handleFlutterwavePayment = useCallback(async (orderData: any, total: number) => {
+    // BUG FIX: Guard against the Flutterwave script not having loaded yet.
+    // Without this, window.FlutterwaveCheckout is undefined and throws a TypeError,
+    // leaving isSubmitting permanently stuck at true.
+    if (!flwScriptLoaded || !(window as any).FlutterwaveCheckout) {
+      toast.error('Payment system is still loading. Please try again in a moment.');
+      setIsSubmitting(false);
       return;
     }
 
-    setIsSubmitting(true);
-    
-    try {
-      // Deduct from wallet
-      deductFromBalance(total, `Errand payment - ${errandType}`);
+    const response = await paymentApi.initializeOrderPayment(orderData);
+    if (response.error) {
+      toast.error(response.error);
+      setIsSubmitting(false);
+      return;
+    }
 
-      // Auth check
-      const { data: { session } } = await getFreshSession();
-      if (!session) {
-        toast.error("Your session has expired. Please log in again.");
-        navigate('/login');
-        return;
-      }
-      
-      const { itemFee, deliveryFee, serviceFee } = calculateTotals();
-      
-      const orderData = {
-        errandType,
-        items: items.map(item => ({
-          name: item.name,
-          quantity: item.quantity,
-          estimatedPrice: item.estimatedPrice
-        })),
-        pickupAddress: '',
-        pickupCity: '',
-        pickupState: '',
-        deliveryAddress: deliveryAddress?.street || '',
-        deliveryCity: deliveryAddress?.city || '',
-        deliveryState: deliveryAddress?.state || '',
-        itemFee,
-        deliveryFee,
-        serviceFee,
-        totalAmount: total,
-        notes,
-        scheduledFor: scheduledFor ? new Date(scheduledFor).toISOString() : undefined,
-        isEmergency,
-      };
+    const initData = response.data as any;
 
-      console.log('Submitting order...', orderData);
-      
-      // We'll create a local order so it immediately shows up in Order History,
-      // regardless of whether the backend responds.
-      const newOrderId = 'ORD' + Date.now();
-      const newOrder = {
-        id: newOrderId,
-        orderNumber: 'ORD-' + Math.floor(Math.random() * 100000).toString(),
-        userId: session.user.id,
-        status: 'PENDING_ADMIN_REVIEW',
-        type: errandType,
-        items: items.map((item, index) => ({
-          ...item,
-          id: item.id || `item-${index}`
-        })),
-        pickupAddress: { street: '', city: '', state: '' },
-        deliveryAddress,
-        itemFee: itemFee,
-        deliveryFee: deliveryFee,
-        serviceFee: serviceFee,
-        totalAmount: total,
-        notes,
-        scheduledFor,
-        isEmergency,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+    return new Promise<void>((resolve) => {
+      (window as any).FlutterwaveCheckout({
+        public_key: FLW_PUBLIC_KEY,
+        tx_ref: initData.tx_ref,
+        amount: initData.amount,
+        currency: initData.currency || 'NGN',
+        payment_options: 'card,ussd,banktransfer',
+        customer: initData.customer,
+        callback: async (data: any) => {
+          const verifyResponse = await paymentApi.verifyTransaction(data.transaction_id, data.tx_ref);
+          if (!verifyResponse.error) {
+            const newOrder = {
+              id: initData.order_id,
+              orderNumber: initData.order_number,
+              userId: user?.id || '',
+              status: 'PENDING_ADMIN_REVIEW',
+              type: orderData.errandType,
+              items: orderData.items,
+              pickupAddress: { street: '', city: '', state: '' },
+              deliveryAddress: deliveryAddress || { id: '', street: '', city: '', state: '', label: '' },
+              itemFee: orderData.itemFee,
+              deliveryFee: orderData.deliveryFee,
+              serviceFee: orderData.serviceFee,
+              totalAmount: total,
+              notes: orderData.notes,
+              scheduledFor: orderData.scheduledFor,
+              isEmergency: orderData.isEmergency,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
 
-      try {
-        const response = (await orderApi.createOrder(orderData)) as any;
-        if (response.error) throw new Error(response.error);
-        if (response.order) {
-          // If backend succeeds, use the real ID so tracking works with the backend
-          newOrder.id = response.order.id;
-          newOrder.orderNumber = response.order.orderNumber || newOrder.orderNumber;
-        }
-      } catch (backendError) {
-        console.warn("Backend order creation failed, relying on local state.", backendError);
-      }
+            useOrderStore.setState((state) => ({
+              orders: [newOrder as any, ...state.orders]
+            }));
 
-      // Inject into store so OrderHistoryPage picks it up instantly
-      useOrderStore.setState((state) => ({
-        orders: [newOrder as any, ...state.orders]
-      }));
-
-      toast.success('Order paid & placed successfully!', {
-        description: `₦${total.toLocaleString()} deducted from your wallet.`
+            toast.success('Payment successful! Order placed.');
+            navigate('/order-history');
+          } else {
+            toast.error('Payment verification failed. Please contact support.');
+          }
+          resolve();
+        },
+        onclose: () => {
+          setIsSubmitting(false);
+          toast.info('Payment cancelled');
+          resolve();
+        },
+        customizations: {
+          title: 'ErrandHub',
+          description: `Pay ₦${total.toLocaleString()} for ${orderData.errandType}`,
+        },
       });
-      navigate('/order-history');
+    });
+  }, [deliveryAddress, navigate, user, flwScriptLoaded]);
+
+  const handleWalletPayment = async (orderData: any, total: number) => {
+    if (balance < total) {
+      toast.error('Insufficient wallet balance', {
+        description: `You need ₦${total.toLocaleString()} but your balance is ₦${balance.toLocaleString()}.`,
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    const { data: { session } } = await getFreshSession();
+    if (!session) {
+      toast.error("Your session has expired. Please log in again.");
+      navigate('/login');
+      setIsSubmitting(false);
+      return;
+    }
+
+    const response = await orderApi.createOrder(orderData) as any;
+    if (response.error) {
+      toast.error(response.error);
+      setIsSubmitting(false);
+      return;
+    }
+
+    const orderId = response.order?.id || 'ORD' + Date.now();
+    const orderNumber = response.order?.orderNumber || 'ORD-' + Math.floor(Math.random() * 100000).toString();
+
+    const deductResponse = await paymentApi.deductFromWallet(total, orderId);
+    if (deductResponse.error) {
+      toast.error('Wallet deduction failed. Your order will be reviewed.');
+    } else {
+      fetchWallet();
+    }
+
+    const newOrder = {
+      id: orderId,
+      orderNumber,
+      userId: session.user.id,
+      status: 'PENDING_ADMIN_REVIEW',
+      type: errandType,
+      items: items.map((item, index) => ({
+        ...item,
+        id: item.id || `item-${index}`
+      })),
+      pickupAddress: { street: '', city: '', state: '' },
+      deliveryAddress,
+      itemFee: orderData.itemFee,
+      deliveryFee: orderData.deliveryFee,
+      serviceFee: orderData.serviceFee,
+      totalAmount: total,
+      notes,
+      scheduledFor,
+      isEmergency,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    useOrderStore.setState((state) => ({
+      orders: [newOrder as any, ...state.orders]
+    }));
+
+    toast.success('Order paid & placed successfully!', {
+      description: `₦${total.toLocaleString()} deducted from your wallet.`
+    });
+    navigate('/order-history');
+  };
+
+  const handleRequestErrand = async (e?: React.MouseEvent | React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
+
+    const { itemFee, deliveryFee, serviceFee, total } = calculateTotals();
+    const orderData = {
+      errandType,
+      items: items.map(item => ({
+        name: item.name,
+        quantity: item.quantity,
+        estimatedPrice: item.estimatedPrice
+      })),
+      pickupAddress: '',
+      pickupCity: '',
+      pickupState: '',
+      deliveryAddress: deliveryAddress?.street || '',
+      deliveryCity: deliveryAddress?.city || '',
+      deliveryState: deliveryAddress?.state || '',
+      itemFee,
+      deliveryFee,
+      serviceFee,
+      totalAmount: total,
+      notes,
+      scheduledFor: scheduledFor ? new Date(scheduledFor).toISOString() : undefined,
+      isEmergency,
+    };
+
+    try {
+      if (paymentMethod === 'flutterwave') {
+        await handleFlutterwavePayment(orderData, total);
+      } else {
+        await handleWalletPayment(orderData, total);
+      }
     } catch (error: any) {
       console.error("Submission failed:", error);
-      toast.success('Order placed!', { description: 'Payment recorded from wallet.' });
-      navigate('/order-history');
+      toast.error('Something went wrong. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -808,6 +909,39 @@ const RequestErrandPage = () => {
                     </CardContent>
                   </Card>
 
+                  {/* Payment Method Selection */}
+                  <div className="mb-4">
+                    <p className="text-xs text-gray-400 uppercase tracking-wider font-bold mb-3">Payment Method</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod('wallet')}
+                        className={`p-4 rounded-xl border-2 text-left transition-all ${
+                          paymentMethod === 'wallet'
+                            ? 'border-[#277310] bg-[#277310]/5'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <Wallet className={`w-5 h-5 mb-2 ${paymentMethod === 'wallet' ? 'text-[#277310]' : 'text-gray-400'}`} />
+                        <p className={`font-semibold text-sm ${paymentMethod === 'wallet' ? 'text-[#277310]' : 'text-gray-700'}`}>Wallet</p>
+                        <p className="text-xs text-gray-500 mt-0.5">Balance: ₦{balance.toLocaleString()}</p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod('flutterwave')}
+                        className={`p-4 rounded-xl border-2 text-left transition-all ${
+                          paymentMethod === 'flutterwave'
+                            ? 'border-[#277310] bg-[#277310]/5'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <CreditCard className={`w-5 h-5 mb-2 ${paymentMethod === 'flutterwave' ? 'text-[#277310]' : 'text-gray-400'}`} />
+                        <p className={`font-semibold text-sm ${paymentMethod === 'flutterwave' ? 'text-[#277310]' : 'text-gray-700'}`}>Card / Transfer</p>
+                        <p className="text-xs text-gray-500 mt-0.5">Pay with Flutterwave</p>
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="flex gap-3">
                     <Button type="button" variant="outline" onClick={() => setStep(3)} className="flex-1 h-12">
                       Back
@@ -815,43 +949,53 @@ const RequestErrandPage = () => {
                     <Button 
                       type="button" 
                       onClick={handleRequestErrand} 
-                      disabled={isSubmitting || balance < totals.total}
+                      disabled={isSubmitting || (paymentMethod === 'wallet' && balance < totals.total)}
                       className={`flex-1 h-12 px-6 ${
-                        balance >= totals.total 
-                          ? 'bg-[#277310] hover:bg-[#1e5a10]' 
-                          : 'bg-gray-400 cursor-not-allowed'
+                        paymentMethod === 'wallet' && balance < totals.total
+                          ? 'bg-gray-400 cursor-not-allowed' 
+                          : 'bg-[#277310] hover:bg-[#1e5a10]'
                       }`}
                     >
-                      <Wallet className="w-5 h-5 mr-2" />
-                      {isSubmitting 
-                        ? 'Processing...' 
-                        : balance >= totals.total 
-                          ? `Pay ₦${totals.total.toLocaleString()}` 
-                          : 'Insufficient Balance'
-                      }
+                      {isSubmitting ? (
+                        <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Processing...</>
+                      ) : paymentMethod === 'flutterwave' ? (
+                        <><CreditCard className="w-5 h-5 mr-2" /> Pay ₦{totals.total.toLocaleString()}</>
+                      ) : balance >= totals.total ? (
+                        <><Wallet className="w-5 h-5 mr-2" /> Pay ₦{totals.total.toLocaleString()}</>
+                      ) : (
+                        'Insufficient Balance'
+                      )}
                     </Button>
                   </div>
 
-                  {/* Wallet Balance Indicator */}
-                  <div className={`mt-4 p-3 rounded-xl flex items-center justify-between text-sm ${
-                    balance >= totals.total 
-                      ? 'bg-green-50 text-green-700 border border-green-200' 
-                      : 'bg-red-50 text-red-700 border border-red-200'
-                  }`}>
-                    <span className="flex items-center gap-2">
-                      <Wallet className="w-4 h-4" />
-                      Wallet Balance: <strong>₦{balance.toLocaleString()}</strong>
-                    </span>
-                    {balance < totals.total && (
-                      <button 
-                        type="button"
-                        onClick={() => navigate('/wallet')} 
-                        className="underline font-bold hover:text-red-900 transition-colors"
-                      >
-                        Fund Wallet
-                      </button>
-                    )}
-                  </div>
+                  {paymentMethod === 'wallet' && (
+                    <div className={`mt-4 p-3 rounded-xl flex items-center justify-between text-sm ${
+                      balance >= totals.total 
+                        ? 'bg-green-50 text-green-700 border border-green-200' 
+                        : 'bg-red-50 text-red-700 border border-red-200'
+                    }`}>
+                      <span className="flex items-center gap-2">
+                        <Wallet className="w-4 h-4" />
+                        Wallet Balance: <strong>₦{balance.toLocaleString()}</strong>
+                      </span>
+                      {balance < totals.total && (
+                        <button 
+                          type="button"
+                          onClick={() => navigate('/wallet')} 
+                          className="underline font-bold hover:text-red-900 transition-colors"
+                        >
+                          Fund Wallet
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {paymentMethod === 'flutterwave' && (
+                    <div className="mt-4 p-3 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-2 text-sm">
+                      <CreditCard className="w-4 h-4 shrink-0" />
+                      Secure payment powered by <strong>Flutterwave</strong>. Pay with card, USSD, or bank transfer.
+                    </div>
+                  )}
                 </div>
               )}
             </motion.div>
