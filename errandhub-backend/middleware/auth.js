@@ -73,13 +73,29 @@ const authenticate = async (req, res, next) => {
       const email = supaUser?.email || '';
       const phone = metadata.phone || '';
 
-      const insertResult = await pool.query(
-        `INSERT INTO users (id, first_name, last_name, email, phone, role, is_active, password_hash)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, first_name, last_name, email, phone, role, is_active`,
-        [userId, firstName, lastName, email, phone, 'user', true, '']
+      // Check if a user with this email already exists (e.g. from email/password signup)
+      const existing = await pool.query(
+        'SELECT id, first_name, last_name, email, phone, role, is_active FROM users WHERE email = $1',
+        [email]
       );
-      result = insertResult;
-      console.log(`Auto-created user profile for ${email} (${userId})`);
+
+      if (existing.rows.length > 0) {
+        // Link OAuth user to existing account by updating the ID
+        await pool.query('UPDATE users SET id = $1 WHERE email = $2', [userId, email]);
+        result = await pool.query(
+          'SELECT id, first_name, last_name, email, phone, role, is_active FROM users WHERE id = $1',
+          [userId]
+        );
+        console.log(`Linked OAuth user ${userId} to existing profile for ${email}`);
+      } else {
+        const insertResult = await pool.query(
+          `INSERT INTO users (id, first_name, last_name, email, phone, role, is_active, password_hash)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, first_name, last_name, email, phone, role, is_active`,
+          [userId, firstName, lastName, email, phone, 'user', true, '']
+        );
+        result = insertResult;
+        console.log(`Auto-created user profile for ${email} (${userId})`);
+      }
     }
 
     req.user = result.rows[0];
