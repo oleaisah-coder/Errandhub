@@ -1,4 +1,7 @@
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useAuthStore } from '@/store';
 import Navbar from '@/components/Navbar';
 import HeroSection from '@/sections/HeroSection';
 import HowItWorksSection from '@/sections/HowItWorksSection';
@@ -9,6 +12,17 @@ import CTASection from '@/sections/CTASection';
 import Footer from '@/sections/Footer';
 
 const LandingPage = () => {
+  const { isAuthenticated, user } = useAuthStore();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const dash = user.role === 'admin' ? '/admin-dashboard' :
+                   user.role === 'runner' ? '/runner-dashboard' : '/dashboard';
+      navigate(dash, { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
