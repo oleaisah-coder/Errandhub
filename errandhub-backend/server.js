@@ -1,7 +1,17 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '.env') });
+
+if (!process.env.JWT_SECRET) {
+  console.error('CRITICAL: JWT_SECRET is not set. Exiting.');
+  process.exit(1);
+}
+
+if (!process.env.FLUTTERWAVE_SECRET_KEY) {
+  console.error('CRITICAL: FLUTTERWAVE_SECRET_KEY is not set. Exiting.');
+  process.exit(1);
+}
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -44,6 +54,21 @@ const runnerRoutes = require('./routes/runnerRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
+
+// ─── Flutterwave Webhook (MUST be before paymentRoutes so authenticate middleware is NOT applied) ─────
+// Uses express.raw so we receive the raw buffer for signature verification
+app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+  try {
+    const rawBody = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : JSON.stringify(req.body);
+    req.body = JSON.parse(rawBody);
+    const { webhookHandler } = require('./controllers/paymentController');
+    webhookHandler(req, res);
+  } catch (error) {
+    console.error('Webhook parse error:', error);
+    res.status(400).json({ message: 'Invalid webhook body' });
+  }
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/orders', orderRoutes);
@@ -51,6 +76,9 @@ app.use('/api/runner', runnerRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/payments', paymentRoutes);
+
+// (Webhook route already registered above, before paymentRoutes)
 
 // ─── Health Check ────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

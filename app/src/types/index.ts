@@ -121,12 +121,16 @@ export interface Notification {
 // Payment Types
 export interface Payment {
   id: string;
-  orderId: string;
+  orderId?: string;
   userId: string;
   amount: number;
-  method: 'card' | 'cash' | 'wallet';
+  currency: string;
+  reference: string;
+  flutterwaveId?: string;
   status: 'pending' | 'completed' | 'failed' | 'refunded';
+  paymentType: 'wallet_funding' | 'order_payment';
   createdAt: string;
+  updatedAt: string;
 }
 
 // Dashboard Stats
@@ -161,7 +165,9 @@ export interface Service {
 export interface Transaction {
   id: string;
   amount: number;
-  type: 'credit' | 'debit';
+  type: 'credit' | 'debit' | 'pending';
   description: string;
+  reference?: string;
+  status?: string;
   createdAt: string;
 }
