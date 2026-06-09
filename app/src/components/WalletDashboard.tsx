@@ -169,23 +169,24 @@ export default function WalletDashboard() {
           ))}
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">₦</span>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="relative flex-1 min-w-0">
+            <span className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium text-sm">₦</span>
             <Input
               type="number"
-              placeholder="Enter custom amount"
+              placeholder="Enter amount"
               value={customAmount}
               onChange={(e) => setCustomAmount(e.target.value)}
-              className="pl-8 h-12 text-lg border-gray-200 focus-visible:ring-[#277310]"
+              className="pl-7 sm:pl-8 h-10 sm:h-12 text-sm sm:text-lg border-gray-200 focus-visible:ring-[#277310]"
             />
           </div>
           <Button
-            className="h-12 px-6 bg-[#277310] hover:bg-[#1e5a10] text-white rounded-xl shadow-md"
+            className="h-10 sm:h-12 px-3 sm:px-6 bg-[#277310] hover:bg-[#1e5a10] text-white rounded-xl shadow-md shrink-0"
             onClick={() => handleOpenModal(Number(customAmount))}
           >
-            <Plus className="w-5 h-5 mr-2" />
-            Top Up
+            <Plus className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Top Up</span>
+            <span className="sm:hidden">Add</span>
           </Button>
         </div>
       </motion.div>
