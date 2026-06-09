@@ -130,7 +130,7 @@ CREATE TABLE payments (
     currency VARCHAR(10) DEFAULT 'NGN',
     reference VARCHAR(100) UNIQUE NOT NULL,
     flutterwave_id VARCHAR(100),
-    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'successful', 'failed', 'refunded')),
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'failed', 'refunded')),
     payment_type VARCHAR(20) CHECK (payment_type IN ('wallet_funding', 'order_payment')),
     payment_method VARCHAR(20),
     metadata JSONB,

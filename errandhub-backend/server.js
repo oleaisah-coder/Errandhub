@@ -151,6 +151,21 @@ async function runColumnMigrations() {
         END $$;
       `);
     }
+
+    // Fix CHECK constraint: allow 'completed' status (code uses 'completed', old constraint only had 'successful')
+    await pool.query(`
+      DO $$ BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.check_constraints
+          WHERE constraint_name = 'payments_status_check'
+          AND check_clause NOT LIKE '%completed%'
+        ) THEN
+          ALTER TABLE payments DROP CONSTRAINT payments_status_check;
+          ALTER TABLE payments ADD CONSTRAINT payments_status_check
+            CHECK (status IN ('pending', 'completed', 'failed', 'refunded'));
+        END IF;
+      END $$;
+    `);
   } catch (err) {
     console.error('Migration error (non-fatal):', err.message);
   }

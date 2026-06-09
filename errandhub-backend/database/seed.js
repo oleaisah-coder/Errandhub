@@ -129,7 +129,7 @@ async function seedDatabase() {
     await pool.query(`
       INSERT INTO payments (id, order_id, user_id, amount, currency, reference, status, payment_type)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-    `, [uuidv4(), orderId1, userId, 10500, 'NGN', paymentRef, 'successful', 'order_payment']);
+    `, [uuidv4(), orderId1, userId, 10500, 'NGN', paymentRef, 'completed', 'order_payment']);
     // Create notifications
     await pool.query(`
       INSERT INTO notifications (id, user_id, title, message, type, order_id, is_read)
