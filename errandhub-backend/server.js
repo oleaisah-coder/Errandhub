@@ -117,11 +117,24 @@ app.use((err, req, res, _next) => {
 
 // ─── Auto-Run Migrations on Startup ──────────────────────────
 const { pool } = require('./config/database');
+const fs = require('fs');
 
-async function runMigrations() {
+async function runSchema() {
+  // Check if the users table exists — if not, create all tables from schema.sql
+  const { rows } = await pool.query(
+    `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'users') AS exists`
+  );
+  if (!rows[0]?.exists) {
+    console.log('Schema not found. Creating tables from schema.sql...');
+    const schema = fs.readFileSync(path.join(__dirname, 'database', 'schema.sql'), 'utf8');
+    await pool.query(schema);
+    console.log('Schema created successfully.');
+  }
+}
+
+async function runColumnMigrations() {
   try {
     const columns = [
-      { name: 'currency', def: 'VARCHAR(10) DEFAULT \'NGN\'' },
       { name: 'reference', def: 'VARCHAR(100)' },
       { name: 'flutterwave_id', def: 'VARCHAR(100)' },
       { name: 'payment_type', def: 'VARCHAR(20)' },
@@ -138,6 +151,15 @@ async function runMigrations() {
         END $$;
       `);
     }
+  } catch (err) {
+    console.error('Migration error (non-fatal):', err.message);
+  }
+}
+
+async function runMigrations() {
+  try {
+    await runSchema();
+    await runColumnMigrations();
     console.log('Migrations complete');
   } catch (err) {
     console.error('Migration error (non-fatal):', err.message);

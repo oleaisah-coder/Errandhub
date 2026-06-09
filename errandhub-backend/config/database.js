@@ -3,21 +3,24 @@ const bcrypt = require('bcryptjs');
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 
 const RAW_DATABASE_URL = process.env.DATABASE_URL;
-
-// Supabase direct connection (port 5432) may be IPv6-only on some projects.
-// Render doesn't support outbound IPv6, so use port 6543 (connection pooler)
-// which supports IPv4. The pooler adds minimal overhead and is recommended
-// for serverless/cloud environments.
 let DATABASE_URL = RAW_DATABASE_URL;
+
+// Render's network doesn't support outbound IPv6. Supabase database
+// hostnames may resolve to IPv6-only addresses. If still using Supabase
+// PostgreSQL directly, switch from direct port (5432) to pooler port
+// (6543) which supports IPv4. Render PostgreSQL is unaffected.
 if (DATABASE_URL && DATABASE_URL.includes('supabase.co') && DATABASE_URL.includes(':5432')) {
   DATABASE_URL = DATABASE_URL.replace(':5432', ':6543');
 }
 
+const ssl = DATABASE_URL && (
+  DATABASE_URL.includes('supabase.co') ||
+  DATABASE_URL.includes('render.com')
+) ? { rejectUnauthorized: false } : false;
+
 const poolConfig = {
   connectionString: DATABASE_URL,
-  ssl: DATABASE_URL && DATABASE_URL.includes('supabase.co') 
-    ? { rejectUnauthorized: false } 
-    : false,
+  ssl,
 };
 
 let pool;
@@ -108,7 +111,7 @@ const mockPool = {
 
 // Decide whether to use real Pool or Mock
 if (process.env.DATABASE_URL) {
-  console.log('PostgreSQL connection string detected. Attempting to connect to Supabase...');
+  console.log('PostgreSQL connection string detected. Connecting to database...');
   pool = new Pool(poolConfig);
   
   pool.on('connect', () => {
