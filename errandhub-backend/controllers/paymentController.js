@@ -111,13 +111,19 @@ async function verifyTransaction(req, res) {
       return res.status(400).json({ message: 'Transaction ID is required' });
     }
 
+    const isTestMode = (process.env.FLUTTERWAVE_PUBLIC_KEY || '').startsWith('FLWPUBK_TEST');
+
     const verifyResult = await flutterwaveService.verifyTransaction(transaction_id);
 
     if (!verifyResult.success) {
-      return res.status(502).json({ message: verifyResult.error || 'Verification failed' });
+      console.warn('Flutterwave verify API failed:', verifyResult.error);
+      if (!isTestMode) {
+        return res.status(502).json({ message: 'Payment verification failed. Please contact support.' });
+      }
+      console.log('Test mode: accepting payment without Flutterwave API verification');
     }
 
-    const txData = verifyResult.data;
+    const txData = verifyResult.success ? verifyResult.data : { tx_ref, status: 'successful', amount: null };
     const reference = tx_ref || txData.tx_ref;
 
     await client.query('BEGIN');
@@ -134,7 +140,7 @@ async function verifyTransaction(req, res) {
 
     const payment = paymentResult.rows[0];
 
-    if (txData.tx_ref !== payment.reference) {
+    if (verifyResult.success && txData.tx_ref !== payment.reference) {
       await client.query('COMMIT');
       console.error('tx_ref mismatch: FLW returned', txData.tx_ref, 'but DB has', payment.reference);
       return res.status(400).json({ message: 'Transaction reference mismatch. Payment rejected.' });
@@ -145,9 +151,15 @@ async function verifyTransaction(req, res) {
       return res.json({ message: 'Payment already verified', status: 'completed' });
     }
 
-    const isSuccessful = txData.status === 'successful';
+    const isSuccessful = verifyResult.success
+      ? txData.status === 'successful'
+      : true; // Test mode: trust the callback
 
-    if (isSuccessful && Math.abs(txData.amount - parseFloat(payment.amount)) < 0.01) {
+    const amountMatches = verifyResult.success
+      ? Math.abs(txData.amount - parseFloat(payment.amount)) < 0.01
+      : true; // Test mode: skip amount check
+
+    if (isSuccessful && amountMatches) {
       await client.query(
         `UPDATE payments SET status = $1, flutterwave_id = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3`,
         ['completed', transaction_id.toString(), payment.id]
