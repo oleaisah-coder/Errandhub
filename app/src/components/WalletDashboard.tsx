@@ -122,7 +122,7 @@ export default function WalletDashboard() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full rounded-3xl bg-gradient-to-br from-[#277310] via-[#1e5a10] to-[#15460a] p-8 text-white shadow-xl relative overflow-hidden"
+        className="w-full rounded-3xl bg-gradient-to-br from-[#277310] via-[#1e5a10] to-[#15460a] p-6 sm:p-8 text-white shadow-xl relative overflow-hidden"
       >
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
@@ -139,7 +139,7 @@ export default function WalletDashboard() {
           </div>
           
           <div>
-            <h1 className="text-5xl font-bold tracking-tight">
+            <h1 className="text-3xl sm:text-5xl font-bold tracking-tight">
               <span className="text-green-300 mr-1">₦</span>
               {balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </h1>
@@ -152,7 +152,7 @@ export default function WalletDashboard() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
+        className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100"
       >
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Fund</h3>
         
@@ -195,9 +195,9 @@ export default function WalletDashboard() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
+        className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100"
       >
-        <div className="flex items-center gap-2 mb-6">
+        <div className="flex items-center gap-2 mb-4 sm:mb-6">
           <History className="w-5 h-5 text-gray-500" />
           <h3 className="text-lg font-semibold text-gray-900">Recent Transactions</h3>
         </div>

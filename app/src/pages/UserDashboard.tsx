@@ -356,13 +356,13 @@ const UserDashboard = () => {
                 className="space-y-8"
               >
                 {/* Welcome */}
-                <div className="bg-white/60 backdrop-blur-md p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-200/50 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+                <div className="bg-white/60 backdrop-blur-md p-5 sm:p-8 rounded-3xl shadow-sm border border-slate-200/50 flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6 relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-64 h-64 bg-[#277310] opacity-5 rounded-full blur-3xl -mr-20 -mt-20"></div>
                   <div className="relative z-10 text-center md:text-left">
-                    <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 font-['Poppins'] tracking-tight">
-                      Welcome back, {user?.firstName}! 👋
+                    <h1 className="text-2xl sm:text-4xl font-bold text-slate-900 font-['Poppins'] tracking-tight">
+                      Welcome back{user?.firstName ? `, ${user?.firstName}` : ''}! 👋
                     </h1>
-                    <p className="text-slate-500 mt-2 text-lg">
+                    <p className="text-slate-500 mt-2 text-sm sm:text-lg">
                       Ready to cross items off your to-do list?
                     </p>
                   </div>
@@ -391,7 +391,7 @@ const UserDashboard = () => {
                           <div className="flex items-center justify-between gap-1">
                             <div className="min-w-0">
                               <p className="text-xs sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-1 truncate">{stat.label}</p>
-                              <p className="text-xl sm:text-3xl font-bold tracking-tight text-slate-900 truncate">{stat.value}</p>
+                              <p className="text-lg sm:text-3xl font-bold tracking-tight text-slate-900 truncate">{stat.value}</p>
                             </div>
                             <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner ${stat.bgColor}`}>
                               <stat.icon className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -416,10 +416,10 @@ const UserDashboard = () => {
                     <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-white opacity-10 rounded-full blur-2xl pointer-events-none"></div>
                     
                     <div className="text-center sm:text-left relative z-10">
-                      <h3 className="text-2xl font-bold text-white font-['Poppins']">
+                      <h3 className="text-xl sm:text-2xl font-bold text-white font-['Poppins']">
                         Need something fast?
                       </h3>
-                      <p className="text-emerald-50 mt-1 font-medium text-lg">
+                      <p className="text-emerald-50 mt-1 font-medium text-sm sm:text-lg">
                         Mark your errand as an <strong className="text-white">Emergency</strong> for priority routing.
                       </p>
                     </div>
@@ -432,8 +432,8 @@ const UserDashboard = () => {
                 {/* Active Orders */}
                 <div>
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold text-slate-900 font-['Poppins'] flex items-center gap-2">
-                      <Clock className="w-6 h-6 text-amber-500" />
+                    <h2 className="text-xl sm:text-2xl font-bold text-slate-900 font-['Poppins'] flex items-center gap-2">
+                      <Clock className="w-5 sm:w-6 h-5 sm:h-6 text-amber-500" />
                       Active Orders
                     </h2>
                     <Link to="/order-history" className="text-[#277310] font-medium hover:underline flex items-center gap-1 group">
@@ -490,7 +490,7 @@ const UserDashboard = () => {
                 className="space-y-6"
               >
                 <div className="flex items-center justify-between mb-2">
-                  <h1 className="text-3xl font-bold text-slate-900 font-['Poppins']">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 font-['Poppins']">
                     Notifications
                   </h1>
                   {unreadCount > 0 && (
@@ -557,7 +557,7 @@ const UserDashboard = () => {
             {activeTab === 'wallet' && (
               <div>
                 <div className="mb-6 flex items-center justify-between">
-                  <h1 className="text-3xl font-bold text-slate-900 font-['Poppins']">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 font-['Poppins']">
                     Your Wallet
                   </h1>
                 </div>

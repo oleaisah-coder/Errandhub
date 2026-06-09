@@ -147,7 +147,7 @@ const ProfilePage = () => {
           >
             {/* Avatar Section */}
             <Card className="mb-6">
-              <CardContent className="p-8 text-center">
+              <CardContent className="p-6 sm:p-8 text-center">
                 <div className="relative inline-block">
                   {avatarUrl ? (
                     <img 

@@ -134,26 +134,26 @@ const SignupPage = () => {
         className="w-full max-w-md relative z-10"
       >
         {/* Card */}
-        <div className="bg-white rounded-3xl shadow-xl p-8">
+        <div className="bg-white rounded-3xl shadow-xl p-6 sm:p-8">
           {/* Logo */}
           <motion.div
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: 'spring' }}
-            className="text-center mb-8"
+            className="text-center mb-6 sm:mb-8"
           >
             <Link to="/" className="inline-flex items-center gap-2 mb-4">
               <div className="w-12 h-12 bg-[#277310] rounded-xl flex items-center justify-center">
                 <Package className="w-6 h-6 text-white" />
               </div>
-              <span className="text-2xl font-bold text-[#277310] font-['Poppins']">
+              <span className="text-xl sm:text-2xl font-bold text-[#277310] font-['Poppins']">
                 ErrandHub
               </span>
             </Link>
-            <h1 className="text-2xl font-bold text-gray-900 font-['Poppins']">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 font-['Poppins']">
               Create Account
             </h1>
-            <p className="text-gray-500 mt-2">
+            <p className="text-gray-500 mt-1 sm:mt-2 text-sm sm:text-base">
               Join thousands of satisfied customers
             </p>
           </motion.div>
@@ -168,12 +168,12 @@ const SignupPage = () => {
                     backgroundColor: s <= step ? '#277310' : '#e5e7eb',
                     scale: s === step ? 1.1 : 1,
                   }}
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium"
+                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-medium"
                 >
-                  {s < step ? <Check className="w-4 h-4" /> : s}
+                  {s < step ? <Check className="w-3 h-3 sm:w-4 sm:h-4" /> : s}
                 </motion.div>
                 {s < 3 && (
-                  <div className={`w-8 h-0.5 ${s < step ? 'bg-[#277310]' : 'bg-gray-200'}`} />
+                  <div className={`w-6 sm:w-8 h-0.5 ${s < step ? 'bg-[#277310]' : 'bg-gray-200'}`} />
                 )}
               </div>
             ))}

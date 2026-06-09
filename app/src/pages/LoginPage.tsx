@@ -101,26 +101,26 @@ const LoginPage = () => {
         className="w-full max-w-md relative z-10"
       >
         {/* Card */}
-        <div className="bg-white rounded-3xl shadow-xl p-8">
+        <div className="bg-white rounded-3xl shadow-xl p-6 sm:p-8">
           {/* Logo */}
           <motion.div
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: 'spring' }}
-            className="text-center mb-8"
+            className="text-center mb-6 sm:mb-8"
           >
             <Link to="/" className="inline-flex items-center gap-2 mb-4">
               <div className="w-12 h-12 bg-[#277310] rounded-xl flex items-center justify-center">
                 <Package className="w-6 h-6 text-white" />
               </div>
-              <span className="text-2xl font-bold text-[#277310] font-['Poppins']">
+              <span className="text-xl sm:text-2xl font-bold text-[#277310] font-['Poppins']">
                 ErrandHub
               </span>
             </Link>
-            <h1 className="text-2xl font-bold text-gray-900 font-['Poppins']">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 font-['Poppins']">
               Welcome Back
             </h1>
-            <p className="text-gray-500 mt-2">
+            <p className="text-gray-500 mt-1 sm:mt-2 text-sm sm:text-base">
               Sign in to continue to your account
             </p>
           </motion.div>

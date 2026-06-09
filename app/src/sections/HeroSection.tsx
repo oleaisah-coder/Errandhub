@@ -107,7 +107,7 @@ const HeroSection = () => {
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 font-['Poppins'] leading-tight mb-6"
+              className="text-3xl sm:text-5xl lg:text-6xl font-bold text-gray-900 font-['Poppins'] leading-tight mb-4 sm:mb-6"
             >
               We Run Your{' '}
               <span className="text-[#277310] relative">
@@ -139,7 +139,7 @@ const HeroSection = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.6 }}
-              className="text-lg text-gray-600 mb-8 max-w-xl mx-auto lg:mx-0"
+              className="text-base sm:text-lg text-gray-600 mb-6 sm:mb-8 max-w-xl mx-auto lg:mx-0"
             >
               From grocery runs to document delivery, our trusted runners handle 
               your tasks while you focus on what matters most.
@@ -183,7 +183,7 @@ const HeroSection = () => {
                     <stat.icon className="w-5 h-5 text-[#277310]" />
                   </div>
                   <div>
-                    <p className="text-xl font-bold text-gray-900">{stat.value}</p>
+                    <p className="text-lg sm:text-xl font-bold text-gray-900">{stat.value}</p>
                     <p className="text-xs text-gray-500">{stat.label}</p>
                   </div>
                 </motion.div>

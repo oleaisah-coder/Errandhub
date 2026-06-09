@@ -417,11 +417,11 @@ const RequestErrandPage = () => {
                   backgroundColor: s <= step ? '#277310' : '#e5e7eb',
                   scale: s === step ? 1.1 : 1,
                 }}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium"
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-medium"
               >
                 {s}
               </motion.div>
-              {s < 4 && <div className={`w-8 h-0.5 ${s < step ? 'bg-[#277310]' : 'bg-gray-200'}`} />}
+              {s < 4 && <div className={`w-6 sm:w-8 h-0.5 ${s < step ? 'bg-[#277310]' : 'bg-gray-200'}`} />}
             </div>
           ))}
         </div>
@@ -437,7 +437,7 @@ const RequestErrandPage = () => {
             >
               {step === 1 && (
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 font-['Poppins'] mb-2">
+                  <h2 className="text-xl sm:text-2xl font-bold text-gray-900 font-['Poppins'] mb-2">
                     What do you need?
                   </h2>
                   <p className="text-gray-600 mb-6">Select the type of errand you need help with.</p>
@@ -474,7 +474,7 @@ const RequestErrandPage = () => {
 
               {step === 2 && (
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 font-['Poppins'] mb-2">
+                  <h2 className="text-xl sm:text-2xl font-bold text-gray-900 font-['Poppins'] mb-2">
                     What items do you need?
                   </h2>
                   <p className="text-gray-600 mb-6">Add all the items you need for this errand.</p>
@@ -552,7 +552,7 @@ const RequestErrandPage = () => {
 
               {step === 3 && (
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 font-['Poppins'] mb-2">
+                  <h2 className="text-xl sm:text-2xl font-bold text-gray-900 font-['Poppins'] mb-2">
                     Where should we deliver?
                   </h2>
                   <p className="text-gray-600 mb-6">Select or add delivery address.</p>
@@ -846,7 +846,7 @@ const RequestErrandPage = () => {
 
               {step === 4 && (
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 font-['Poppins'] mb-1">
+                  <h2 className="text-xl sm:text-2xl font-bold text-gray-900 font-['Poppins'] mb-1">
                     Review your order
                   </h2>
                   <p className="text-gray-500 mb-6 text-sm">Confirm details before submission.</p>

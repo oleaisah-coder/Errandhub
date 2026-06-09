@@ -19,7 +19,7 @@ export default function WalletPage() {
               <ChevronLeft className="w-5 h-5" />
               Back
             </button>
-            <h1 className="text-lg font-bold text-gray-900 font-['Poppins']">Your Wallet</h1>
+            <h1 className="text-base sm:text-lg font-bold text-gray-900 font-['Poppins']">Your Wallet</h1>
             <div className="w-16" /> {/* Spacer for centering */}
           </div>
         </div>
