@@ -115,10 +115,40 @@ app.use((err, req, res, _next) => {
   });
 });
 
+// ─── Auto-Run Migrations on Startup ──────────────────────────
+const { pool } = require('./config/database');
+
+async function runMigrations() {
+  try {
+    const columns = [
+      { name: 'currency', def: 'VARCHAR(10) DEFAULT \'NGN\'' },
+      { name: 'reference', def: 'VARCHAR(100)' },
+      { name: 'flutterwave_id', def: 'VARCHAR(100)' },
+      { name: 'payment_type', def: 'VARCHAR(20)' },
+      { name: 'payment_method', def: 'VARCHAR(20)' },
+      { name: 'metadata', def: 'JSONB' },
+      { name: 'updated_at', def: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP' },
+    ];
+    for (const col of columns) {
+      await pool.query(`
+        DO $$ BEGIN
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'payments' AND column_name = '${col.name}') THEN
+            ALTER TABLE payments ADD COLUMN ${col.name} ${col.def};
+          END IF;
+        END $$;
+      `);
+    }
+    console.log('Migrations complete');
+  } catch (err) {
+    console.error('Migration error (non-fatal):', err.message);
+  }
+}
+
 // ─── Start Server ────────────────────────────────────────────
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`ErrandHub API server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  await runMigrations();
 });
 
 module.exports = app;
