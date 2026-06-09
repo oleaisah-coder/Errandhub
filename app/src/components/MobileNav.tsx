@@ -62,7 +62,7 @@ export default function MobileNav() {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[100] lg:hidden pointer-events-none">
+    <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden pointer-events-none">
       <div className="pointer-events-auto bg-white rounded-t-[32px] shadow-[0_-8px_30px_rgb(0,0,0,0.06)] px-2 pb-safe border-t border-slate-100/50">
         <div className="flex items-center justify-between h-[72px] sm:h-20 px-2 sm:px-6 relative">
           
