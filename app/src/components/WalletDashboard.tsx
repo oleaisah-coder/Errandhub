@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Wallet, Plus, CreditCard,  ArrowRight, ArrowDownRight, ArrowUpRight, History, University, Copy, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -39,6 +39,7 @@ export default function WalletDashboard() {
   const [fundingMethod, setFundingMethod] = useState<'card' | 'bank_transfer'>('card');
   const [scriptLoaded, setScriptLoaded] = useState(false);
 
+  const paymentCompletedRef = useRef(false);
   const presetAmounts = [5000, 10000, 20000];
 
   useEffect(() => {
@@ -83,6 +84,7 @@ export default function WalletDashboard() {
         payment_options: 'card,ussd,banktransfer',
         customer: initData.customer,
         callback: async (data: any) => {
+          paymentCompletedRef.current = true;
           const verifyResponse = await paymentApi.verifyTransaction(data.transaction_id, data.tx_ref);
           if (!verifyResponse.error) {
             toast.success(`Successfully funded ₦${amountToFund.toLocaleString()}!`, {
@@ -97,8 +99,10 @@ export default function WalletDashboard() {
           setCustomAmount('');
         },
         onclose: () => {
+          if (!paymentCompletedRef.current) {
+            toast.info('Payment cancelled');
+          }
           setIsProcessing(false);
-          toast.info('Payment cancelled');
         },
         customizations: {
           title: 'ErrandHub Wallet',
