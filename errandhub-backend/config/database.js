@@ -2,10 +2,20 @@ const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 
-// Standard PostgreSQL Pool configuration
+const RAW_DATABASE_URL = process.env.DATABASE_URL;
+
+// Supabase direct connection (port 5432) may be IPv6-only on some projects.
+// Render doesn't support outbound IPv6, so use port 6543 (connection pooler)
+// which supports IPv4. The pooler adds minimal overhead and is recommended
+// for serverless/cloud environments.
+let DATABASE_URL = RAW_DATABASE_URL;
+if (DATABASE_URL && DATABASE_URL.includes('supabase.co') && DATABASE_URL.includes(':5432')) {
+  DATABASE_URL = DATABASE_URL.replace(':5432', ':6543');
+}
+
 const poolConfig = {
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL && process.env.DATABASE_URL.includes('supabase.co') 
+  connectionString: DATABASE_URL,
+  ssl: DATABASE_URL && DATABASE_URL.includes('supabase.co') 
     ? { rejectUnauthorized: false } 
     : false,
 };
