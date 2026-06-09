@@ -112,6 +112,32 @@ CREATE TABLE notifications (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Wallets Table
+CREATE TABLE wallets (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE UNIQUE,
+    balance DECIMAL(12, 2) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Payments Table
+CREATE TABLE payments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    currency VARCHAR(10) DEFAULT 'NGN',
+    reference VARCHAR(100) UNIQUE NOT NULL,
+    flutterwave_id VARCHAR(100),
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'successful', 'failed', 'refunded')),
+    payment_type VARCHAR(20) CHECK (payment_type IN ('wallet_funding', 'order_payment')),
+    payment_method VARCHAR(20),
+    metadata JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Create indexes for better performance
 CREATE INDEX idx_orders_user_id ON orders(user_id);
 CREATE INDEX idx_orders_runner_id ON orders(runner_id);
@@ -121,6 +147,9 @@ CREATE INDEX idx_chat_messages_order_id ON chat_messages(order_id);
 CREATE INDEX idx_notifications_user_id ON notifications(user_id);
 CREATE INDEX idx_runners_user_id ON runners(user_id);
 CREATE INDEX idx_runners_available ON runners(is_available);
+CREATE INDEX idx_payments_user_id ON payments(user_id);
+CREATE INDEX idx_payments_reference ON payments(reference);
+CREATE INDEX idx_payments_status ON payments(status);
 
 -- Create updated_at trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()

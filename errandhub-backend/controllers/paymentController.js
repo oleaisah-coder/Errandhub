@@ -65,7 +65,7 @@ async function initializeWalletFunding(req, res) {
       [paymentId, userId, amount, 'NGN', tx_ref, 'pending', 'wallet_funding', 'card']
     );
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://errandhub.vercel.app';
 
     const initResult = await flutterwaveService.initializeTransaction({
       tx_ref,
@@ -404,7 +404,7 @@ async function initializeOrderPayment(req, res) {
         [uuidv4(), userId, orderId, totalAmount, 'NGN', tx_ref, 'pending', 'order_payment', 'card']
       );
 
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const frontendUrl = process.env.FRONTEND_URL || 'https://errandhub.vercel.app';
 
       const initResult = await flutterwaveService.initializeTransaction({
         tx_ref,

@@ -33,7 +33,7 @@ async function initializeTransaction({ tx_ref, amount, currency, customer, payme
       tx_ref,
       amount,
       currency: currency || 'NGN',
-      redirect_url: redirect_url || `${process.env.FRONTEND_URL || 'http://localhost:5173'}/wallet?payment_status=completed`,
+      redirect_url: redirect_url || `${process.env.FRONTEND_URL || 'https://errandhub.vercel.app'}/wallet?payment_status=completed`,
       customer: {
         email: customer.email,
         name: customer.name,
