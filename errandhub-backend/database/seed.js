@@ -26,6 +26,13 @@ async function seedDatabase() {
     ]);
     console.log('Admin user created');
 
+    // Create admin wallet
+    await pool.query(`
+      INSERT INTO wallets (id, user_id, balance)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (user_id) DO NOTHING
+    `, [uuidv4(), adminId, 0]);
+
     // Create test user
     const userId = uuidv4();
     await pool.query(`
@@ -38,6 +45,13 @@ async function seedDatabase() {
       '45 Residential Ave', 'Lagos', 'Lagos'
     ]);
     console.log('Test user created');
+
+    // Create user wallet with initial balance
+    await pool.query(`
+      INSERT INTO wallets (id, user_id, balance)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (user_id) DO NOTHING
+    `, [uuidv4(), userId, 50000]);
 
     // Create runner user
     const runnerUserId = uuidv4();
@@ -111,11 +125,11 @@ async function seedDatabase() {
     `, [uuidv4(), orderId2, 'Jollof Rice & Chicken', 2, 6000]);
 
     // Create payment for completed order
+    const paymentRef = `ERH-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     await pool.query(`
-      INSERT INTO payments (id, order_id, user_id, amount, payment_method, status, paid_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-    `, [uuidv4(), orderId1, userId, 10500, 'card', 'completed', new Date('2024-03-01')]);
-
+      INSERT INTO payments (id, order_id, user_id, amount, currency, reference, status, payment_type)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `, [uuidv4(), orderId1, userId, 10500, 'NGN', paymentRef, 'successful', 'order_payment']);
     // Create notifications
     await pool.query(`
       INSERT INTO notifications (id, user_id, title, message, type, order_id, is_read)

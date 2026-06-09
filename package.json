@@ -4,7 +4,11 @@
   "description": "Root workspace proxy script",
   "scripts": {
     "start": "cd errandhub-backend && npm start",
-    "dev": "cd app && npm run dev",
+    "dev": "concurrently -n api,web -c blue,green \"npm start\" \"npm run dev:web\"",
+    "dev:web": "cd app && npm run dev",
     "build": "cd app && npm run build"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.3"
   }
 }

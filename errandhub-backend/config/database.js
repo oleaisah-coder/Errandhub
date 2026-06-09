@@ -1,6 +1,6 @@
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 
 // Standard PostgreSQL Pool configuration
 const poolConfig = {

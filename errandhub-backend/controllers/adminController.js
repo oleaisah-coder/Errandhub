@@ -360,34 +360,35 @@ const toggleUserStatus = async (req, res) => {
 // Get payments (admin only)
 const getPayments = async (req, res) => {
   try {
-    const { status, limit = 50, offset = 0 } = req.query;
-
-    let query = `
-      SELECT p.*, o.order_number, u.first_name, u.last_name, u.email
+    const result = await pool.query(`
+      SELECT p.*, u.first_name, u.last_name, u.email
       FROM payments p
-      JOIN orders o ON p.order_id = o.id
       JOIN users u ON p.user_id = u.id
-      WHERE 1=1
-    `;
-
-    const params = [];
-
-    if (status) {
-      params.push(status);
-      query += ` AND p.status = $${params.length}`;
-    }
-
-    query += `
       ORDER BY p.created_at DESC
-      LIMIT $${params.length + 1} OFFSET $${params.length + 2}
-    `;
+    `);
 
-    params.push(limit, offset);
-
-    const result = await pool.query(query, params);
+    const mapped = result.rows.map(p => ({
+      id: p.id,
+      userId: p.user_id,
+      orderId: p.order_id,
+      amount: parseFloat(p.amount) || 0,
+      currency: p.currency,
+      reference: p.reference,
+      flutterwaveId: p.flutterwave_id,
+      status: p.status,
+      paymentType: p.payment_type,
+      meta: p.metadata,
+      user: {
+        firstName: p.first_name,
+        lastName: p.last_name,
+        email: p.email,
+      },
+      createdAt: p.created_at,
+      updatedAt: p.updated_at,
+    }));
 
     res.json({
-      payments: result.rows,
+      payments: mapped,
     });
   } catch (error) {
     console.error('Get payments error:', error);
