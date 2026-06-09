@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Wallet, User, Plus, Bell, BarChart2, Users, Shield, History } from 'lucide-react';
-import { useAuthStore } from '@/components/store';
+import { useAuthStore } from '@/store';
 
 export default function MobileNav() {
   const location = useLocation();

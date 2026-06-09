@@ -20,6 +20,7 @@ const PORT = process.env.PORT || 5001;
 const corsOptions = {
   origin: function (origin, callback) {
     const allowedOrigins = [
+      'https://errandhub.vercel.app',
       'https://errandhub-8o7c.vercel.app',
       'https://errandhub-kkjs.vercel.app',
       'http://localhost:5173',

@@ -49,6 +49,8 @@ export const useAuthStore = create<AuthState>()(
               session,
               token: session.access_token,
               isAuthenticated: state.isAuthenticated || true,
+              isInitialized: true,
+              isLoading: false,
             }));
           } else {
             set({ session: null, isAuthenticated: false, user: null, token: null, isInitialized: true, isLoading: false });
@@ -68,6 +70,7 @@ export const useAuthStore = create<AuthState>()(
                 token: session.access_token,
                 isAuthenticated: true,
                 isLoading: false,
+                isInitialized: true,
               });
             } else {
               set({
